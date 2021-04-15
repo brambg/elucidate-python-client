@@ -41,6 +41,7 @@ class ElucidateClientTestSuite(unittest.TestCase):
         ic(annotation_id.url)
         ic(annotation_id.container_uuid)
         ic(annotation_id.uuid)
+        ic(annotation_id.etag)
 
         annotation = get_result(ec.get_annotation(annotation_id))
         ic(annotation)

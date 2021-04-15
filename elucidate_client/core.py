@@ -39,11 +39,12 @@ class ContainerIdentifier():
 
 
 class AnnotationIdentifier():
-    def __init__(self, url: str):
+    def __init__(self, url: str, etag: str):
         self.url = url
         url_split = url.split('/')
         self.uuid = url_split[-1]
         self.container_uuid = url_split[-2]
+        self.etag = etag
 
 
 class ElucidateClient():
@@ -90,7 +91,8 @@ class ElucidateClient():
             url=container_id.url,
             headers=headers,
             json=annotation)
-        return self.handle_response(response, HTTPStatus.CREATED, lambda r: AnnotationIdentifier(r.json()['id']))
+        return self.handle_response(response, HTTPStatus.CREATED,
+                                    lambda r: AnnotationIdentifier(r.json()['id'], r.headers['etag'][3:-1]))
 
     def get_annotation(self, annotation_identifier: AnnotationIdentifier) -> ElucidateResponse:
         response = requests.get(
