@@ -1,4 +1,8 @@
+from http import HTTPStatus
+from typing import Any
+
 import requests
+from requests import Response
 
 
 def hello():
@@ -10,6 +14,22 @@ headers = {
     'Accept': 'application/ld+json; profile="http://www.w3.org/ns/anno.jsonld"',
     'Content-Type': 'application/ld+json; profile="http://www.w3.org/ns/anno.jsonld"'
 }
+
+
+class ElucidateResponse():
+    def __init__(self, response: Response):
+        self.response = response
+
+
+class ElucidateSuccess(ElucidateResponse):
+    def __init__(self, response: Response, result: Any):
+        super().__init__(response)
+        self.result = result
+
+
+class ElucidateFailure(ElucidateResponse):
+    def __init__(self, response: Response):
+        super().__init__(response)
 
 
 class ContainerIdentifier():
@@ -37,7 +57,7 @@ class ElucidateClient():
     def use_oa(self):
         self.version = 'oa'
 
-    def create_container(self, label: str = 'A Container for Web Annotations'):
+    def create_container(self, label: str = 'A Container for Web Annotations') -> ElucidateResponse:
         body = {
             "@context": [
                 "http://www.w3.org/ns/anno.jsonld",
@@ -52,13 +72,14 @@ class ElucidateClient():
         response = requests.post(url=f'{self.base_uri}/w3c/',
                                  headers=headers,
                                  json=body)
-        container_id = response.headers['location']
-        return ContainerIdentifier(container_id)
+        result_producer = lambda r: ContainerIdentifier(r.headers['location'])
+        return self.handle_response(response, HTTPStatus.CREATED, result_producer)
 
-    def get_container(self, container_identifier: ContainerIdentifier):
-        return requests.get(f'{self.base_uri}/{self.version}/{container_identifier.uuid}/').json()
+    def get_container(self, container_identifier: ContainerIdentifier) -> ElucidateResponse:
+        response = requests.get(f'{self.base_uri}/{self.version}/{container_identifier.uuid}/')
+        return self.handle_response(response, HTTPStatus.OK, lambda r: r.json())
 
-    def create_annotation(self, container_id: ContainerIdentifier, body, target):
+    def create_annotation(self, container_id: ContainerIdentifier, body, target) -> ElucidateResponse:
         annotation = {
             "@context": "http://www.w3.org/ns/anno.jsonld",
             "type": "Annotation",
@@ -69,9 +90,15 @@ class ElucidateClient():
             url=container_id.url,
             headers=headers,
             json=annotation)
-        annotation_id = response.json()['id']
-        return AnnotationIdentifier(annotation_id)
+        return self.handle_response(response, HTTPStatus.CREATED, lambda r: AnnotationIdentifier(r.json()['id']))
 
-    def get_annotation(self, annotation_identifier: AnnotationIdentifier):
-        return requests.get(
-            f'{self.base_uri}/{self.version}/{annotation_identifier.container_uuid}/{annotation_identifier.uuid}').json()
+    def get_annotation(self, annotation_identifier: AnnotationIdentifier) -> ElucidateResponse:
+        response = requests.get(
+            f'{self.base_uri}/{self.version}/{annotation_identifier.container_uuid}/{annotation_identifier.uuid}')
+        return self.handle_response(response, HTTPStatus.OK, lambda r: r.json())
+
+    def handle_response(self, response: Response, expected_status_code: int, result_producer) -> ElucidateResponse:
+        if (response.status_code == expected_status_code):
+            return ElucidateSuccess(response, result_producer(response))
+        else:
+            return ElucidateFailure(response)
