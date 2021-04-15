@@ -73,12 +73,13 @@ class ElucidateClient():
         response = requests.post(url=f'{self.base_uri}/w3c/',
                                  headers=headers,
                                  json=body)
-        result_producer = lambda r: ContainerIdentifier(r.headers['location'])
-        return self.handle_response(response, HTTPStatus.CREATED, result_producer)
+        return handle_response(response, HTTPStatus.CREATED,
+                               lambda r: ContainerIdentifier(r.headers['location']))
 
     def get_container(self, container_identifier: ContainerIdentifier) -> ElucidateResponse:
         response = requests.get(f'{self.base_uri}/{self.version}/{container_identifier.uuid}/')
-        return self.handle_response(response, HTTPStatus.OK, lambda r: r.json())
+        return handle_response(response, HTTPStatus.OK,
+                               lambda r: r.json())
 
     def create_annotation(self, container_id: ContainerIdentifier, body, target) -> ElucidateResponse:
         annotation = {
@@ -91,16 +92,18 @@ class ElucidateClient():
             url=container_id.url,
             headers=headers,
             json=annotation)
-        return self.handle_response(response, HTTPStatus.CREATED,
-                                    lambda r: AnnotationIdentifier(r.json()['id'], r.headers['etag'][3:-1]))
+        return handle_response(response, HTTPStatus.CREATED,
+                               lambda r: AnnotationIdentifier(r.headers['location'], r.headers['etag'][3:-1]))
 
     def get_annotation(self, annotation_identifier: AnnotationIdentifier) -> ElucidateResponse:
         response = requests.get(
             f'{self.base_uri}/{self.version}/{annotation_identifier.container_uuid}/{annotation_identifier.uuid}')
-        return self.handle_response(response, HTTPStatus.OK, lambda r: r.json())
+        return handle_response(response, HTTPStatus.OK,
+                               lambda r: r.json())
 
-    def handle_response(self, response: Response, expected_status_code: int, result_producer) -> ElucidateResponse:
-        if (response.status_code == expected_status_code):
-            return ElucidateSuccess(response, result_producer(response))
-        else:
-            return ElucidateFailure(response)
+
+def handle_response(response: Response, expected_status_code: int, result_producer) -> ElucidateResponse:
+    if (response.status_code == expected_status_code):
+        return ElucidateSuccess(response, result_producer(response))
+    else:
+        return ElucidateFailure(response)
