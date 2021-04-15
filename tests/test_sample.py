@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
+import unittest
+
 from icecream import ic
 
 from core import ElucidateClient
 from .context import elucidate_client
-
-import unittest
-import icecream
 
 
 class BasicTestSuite(unittest.TestCase):
@@ -25,13 +24,26 @@ class ProjectTestSuite(unittest.TestCase):
 class ElucidateClientTestSuite(unittest.TestCase):
     """Elucidate Client test cases."""
 
-
-    def test_container(self):
+    def test_elucidate_client(self):
         ec = ElucidateClient("http://localhost:8080/annotation")
         container_id = ec.create_container(label='Annotation Container')
         assert container_id != None
         ic(container_id.url)
         ic(container_id.uuid)
+
+        body = {
+            "type": "TextualBody",
+            "value": "I like this page!"
+        }
+        target = "http://www.example.com/index.html"
+        annotation_id = ec.create_annotation(container_id=container_id, body=body, target=target)
+        assert annotation_id != None
+        ic(annotation_id.url)
+        ic(annotation_id.container_uuid)
+        ic(annotation_id.uuid)
+
+        annotation = ec.get_annotation(annotation_id)
+        ic(annotation)
 
         w3c_container = ec.get_container(container_id)
         assert w3c_container != None

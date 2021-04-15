@@ -22,8 +22,8 @@ class AnnotationIdentifier():
     def __init__(self, url: str):
         self.url = url
         url_split = url.split('/')
-        self.uuid = url_split[-2]
-        self.container_uuid = url_split[-3]
+        self.uuid = url_split[-1]
+        self.container_uuid = url_split[-2]
 
 
 class ElucidateClient():
@@ -58,5 +58,20 @@ class ElucidateClient():
     def get_container(self, container_identifier: ContainerIdentifier):
         return requests.get(f'{self.base_uri}/{self.version}/{container_identifier.uuid}/').json()
 
+    def create_annotation(self, container_id: ContainerIdentifier, body, target):
+        annotation = {
+            "@context": "http://www.w3.org/ns/anno.jsonld",
+            "type": "Annotation",
+            "body": body,
+            "target": target
+        }
+        response = requests.post(
+            url=container_id.url,
+            headers=headers,
+            json=annotation)
+        annotation_id = response.json()['id']
+        return AnnotationIdentifier(annotation_id)
+
     def get_annotation(self, annotation_identifier: AnnotationIdentifier):
-        return requests.get(f'{self.base_uri}/{self.version}/{annotation_identifier.container_uuid}/{annotation_identifier.uuid}/').json()
+        return requests.get(
+            f'{self.base_uri}/{self.version}/{annotation_identifier.container_uuid}/{annotation_identifier.uuid}').json()
