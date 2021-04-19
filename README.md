@@ -1,3 +1,3 @@
-## elucidate_client Project
+## Python Client for elucidate server
 ------
-*You can write here about the description of this project*
+*TODO*
