@@ -107,3 +107,12 @@ def handle_response(response: Response, expected_status_code: int, result_produc
         return ElucidateSuccess(response, result_producer(response))
     else:
         return ElucidateFailure(response)
+
+
+def handle(response: ElucidateResponse):
+    if (isinstance(response, ElucidateSuccess)):
+        return response.result
+    elif (isinstance(response, ElucidateFailure)):
+        raise Exception(f'{response.response.status_code} : {response.response.text}')
+    else:
+        raise Exception(f'Unexpected response: {response}')

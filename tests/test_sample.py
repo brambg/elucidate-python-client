@@ -3,7 +3,7 @@ import unittest
 
 from icecream import ic
 
-from core import ElucidateClient, ElucidateSuccess, ElucidateResponse
+from core import ElucidateClient, ElucidateSuccess, ElucidateResponse, handle, ContainerIdentifier
 from .context import elucidate_client
 
 
@@ -58,6 +58,16 @@ class ElucidateClientTestSuite(unittest.TestCase):
         ic(oa_container)
         ic(oa_container['id'])
         assert '/oa/' in oa_container['id']
+
+    def test_fail(self):
+        ec = ElucidateClient("http://localhost:8080/annotation")
+        container_id = ContainerIdentifier("http://example.org/fake-container")
+        try:
+            container = handle(ec.get_container(container_id))
+            ic(container)
+            self.fail("expected a 404")
+        except Exception as e:
+            print(e)
 
 
 def get_result(response: ElucidateResponse):
