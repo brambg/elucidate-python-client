@@ -3,22 +3,21 @@ import unittest
 
 from icecream import ic
 
-from core import ElucidateClient, ElucidateSuccess, ElucidateResponse, handle, ContainerIdentifier
-from .context import elucidate_client
+from core import ElucidateClient, ElucidateSuccess, ElucidateResponse, ContainerIdentifier
 
 
-class BasicTestSuite(unittest.TestCase):
-    """Basic test cases."""
-
-    def test_absolute_truth_and_meaning(self):
-        assert True
-
-
-class ProjectTestSuite(unittest.TestCase):
-    """project test cases."""
-
-    def test_hello(self):
-        elucidate_client.hello()
+# class BasicTestSuite(unittest.TestCase):
+#     """Basic test cases."""
+#
+#     def test_absolute_truth_and_meaning(self):
+#         assert True
+#
+#
+# class ProjectTestSuite(unittest.TestCase):
+#     """project test cases."""
+#
+#     def test_hello(self):
+#         elucidate_client.hello()
 
 
 class ElucidateClientTestSuite(unittest.TestCase):
@@ -26,7 +25,7 @@ class ElucidateClientTestSuite(unittest.TestCase):
 
     def test_elucidate_client(self):
         ec = ElucidateClient("http://localhost:8080/annotation")
-        container_id = get_result(ec.create_container(label='Annotation Container'))
+        container_id = ec.create_container(label='Annotation Container')
         assert container_id != None
         ic(container_id.url)
         ic(container_id.uuid)
@@ -36,24 +35,33 @@ class ElucidateClientTestSuite(unittest.TestCase):
             "value": "I like this page!"
         }
         target = "http://www.example.com/index.html"
-        annotation_id = get_result(ec.create_annotation(container_id=container_id, body=body, target=target))
+        annotation_id = ec.create_annotation(container_id=container_id, body=body, target=target)
         assert annotation_id != None
         ic(annotation_id.url)
         ic(annotation_id.container_uuid)
         ic(annotation_id.uuid)
         ic(annotation_id.etag)
 
-        annotation = get_result(ec.get_annotation(annotation_id))
+        annotation = ec.read_annotation(annotation_id)
         ic(annotation)
 
-        w3c_container = get_result(ec.get_container(container_id))
+        deleted = ec.delete_annotation(annotation_id)
+        assert deleted == True
+
+        try:
+            annotation = ec.read_annotation(annotation_id)
+            ic(annotation)
+        except Exception as e:
+            ic(e)
+
+        w3c_container = ec.read_container(container_id)
         assert w3c_container != None
         ic(w3c_container)
         ic(w3c_container['id'])
         assert '/w3c/' in w3c_container['id']
 
         ec.use_oa()
-        oa_container = get_result(ec.get_container(container_id))
+        oa_container = ec.read_container(container_id)
         assert oa_container != None
         ic(oa_container)
         ic(oa_container['id'])
@@ -63,11 +71,29 @@ class ElucidateClientTestSuite(unittest.TestCase):
         ec = ElucidateClient("http://localhost:8080/annotation")
         container_id = ContainerIdentifier("http://example.org/fake-container")
         try:
-            container = handle(ec.get_container(container_id))
+            container = ec.read_container(container_id)
             ic(container)
             self.fail("expected a 404")
         except Exception as e:
             print(e)
+
+    def test_statistics(self):
+        ec = ElucidateClient("http://localhost:8080/annotation")
+        stats = ec.get_body_id_statistics()
+        assert stats['items'] != None
+        ic(stats['items'])
+
+        stats = ec.get_body_source_statistics()
+        assert stats['items'] != None
+        ic(stats['items'])
+
+        stats = ec.get_target_id_statistics()
+        assert stats['items'] != None
+        ic(stats['items'])
+
+        stats = ec.get_target_source_statistics()
+        assert stats['items'] != None
+        ic(stats['items'])
 
 
 def get_result(response: ElucidateResponse):
