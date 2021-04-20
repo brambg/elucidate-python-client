@@ -1,30 +1,16 @@
 # -*- coding: utf-8 -*-
 import unittest
-
 from icecream import ic
+from core import ElucidateClient, ElucidateSuccess, ElucidateResponse, ContainerIdentifier, AnnotationIdentifier
 
-from core import ElucidateClient, ElucidateSuccess, ElucidateResponse, ContainerIdentifier
-
-
-# class BasicTestSuite(unittest.TestCase):
-#     """Basic test cases."""
-#
-#     def test_absolute_truth_and_meaning(self):
-#         assert True
-#
-#
-# class ProjectTestSuite(unittest.TestCase):
-#     """project test cases."""
-#
-#     def test_hello(self):
-#         elucidate_client.hello()
+BASE_URI = "http://localhost:8080/annotation"
 
 
 class ElucidateClientTestSuite(unittest.TestCase):
     """Elucidate Client test cases."""
 
     def test_elucidate_client(self):
-        ec = ElucidateClient("http://localhost:8080/annotation")
+        ec = ElucidateClient(BASE_URI)
         container_id = ec.create_container(label='Annotation Container')
         assert container_id != None
         ic(container_id.url)
@@ -68,7 +54,7 @@ class ElucidateClientTestSuite(unittest.TestCase):
         assert '/oa/' in oa_container['id']
 
     def test_fail(self):
-        ec = ElucidateClient("http://localhost:8080/annotation")
+        ec = ElucidateClient(BASE_URI)
         container_id = ContainerIdentifier("http://example.org/fake-container")
         try:
             container = ec.read_container(container_id)
@@ -78,7 +64,7 @@ class ElucidateClientTestSuite(unittest.TestCase):
             print(e)
 
     def test_statistics(self):
-        ec = ElucidateClient("http://localhost:8080/annotation")
+        ec = ElucidateClient(BASE_URI)
         stats = ec.get_body_id_statistics()
         assert stats['items'] != None
         ic(stats['items'])
@@ -94,6 +80,54 @@ class ElucidateClientTestSuite(unittest.TestCase):
         stats = ec.get_target_source_statistics()
         assert stats['items'] != None
         ic(stats['items'])
+
+
+class AuthorizationTestSuite(unittest.TestCase):
+
+    def test_read_current_user(self):
+        ec = ElucidateClient(BASE_URI, raise_exceptions=False)
+        response = ec.read_current_user()
+        assert isinstance(response, ElucidateSuccess)
+        ic(response.result)
+
+    def test_group(self):
+        ec = ElucidateClient(BASE_URI)
+        group_id = ec.create_group("test_group")
+        ic(group_id)
+        assert isinstance(group_id, str)
+        assert group_id != None
+
+    def test_annotation_group(self):
+        ec = ElucidateClient(BASE_URI)
+
+        group_id = ec.create_group("test_group")
+        ic(group_id)
+        assert isinstance(group_id, str)
+        assert group_id != None
+
+        annotation_url = f'{BASE_URI}/group_id/annotation_id'
+
+        group_annotations = ec.read_group_annotations(group_id)
+        ic(group_annotations)
+        assert isinstance(group_annotations, list)
+        assert annotation_url not in group_annotations
+
+        annotation_id = AnnotationIdentifier(annotation_url)
+        success = ec.create_group_annotation(group_id=group_id, annotation_identifier=annotation_id)
+        assert success == True
+
+        group_annotations = ec.read_group_annotations(group_id)
+        ic(group_annotations)
+        assert isinstance(group_annotations, list)
+        assert annotation_url in group_annotations
+
+        success = ec.delete_group_annotation(group_id=group_id, annotation_identifier=annotation_id)
+        assert success == True
+
+        group_annotations = ec.read_group_annotations(group_id)
+        ic(group_annotations)
+        assert isinstance(group_annotations, list)
+        assert annotation_url not in group_annotations
 
 
 def get_result(response: ElucidateResponse):

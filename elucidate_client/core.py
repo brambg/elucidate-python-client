@@ -185,22 +185,53 @@ class ElucidateClient():
         pass
 
     def read_current_user(self):
-        pass
+        url = f'{self.base_uri}/user/current'
+        response = requests.get(
+            url=url,
+            headers=json_headers)
+        return self.__handle_response(response, HTTPStatus.OK,
+                                      lambda r: r.json())
 
-    def create_group(self):
-        pass
+    def create_group(self, label: str):
+        url = f'{self.base_uri}/group'
+        response = requests.post(
+            url=url,
+            headers=json_headers,
+            json={"label": label})
+        return self.__handle_response(response, HTTPStatus.CREATED,
+                                      lambda r: r.json()['id'])
 
-    def read_group(self):
-        pass
+    def read_group(self, group_id: str):
+        url = f'{self.base_uri}/group/{group_id}'
+        response = requests.get(
+            url=url,
+            headers=json_headers)
+        return self.__handle_response(response, HTTPStatus.OK,
+                                      lambda r: r.json())
 
-    def read_group_users(self):
-        pass
+    def read_group_users(self, group_id: str):
+        url = f'{self.base_uri}/group/{group_id}/users'
+        response = requests.get(
+            url=url,
+            headers=json_headers)
+        return self.__handle_response(response, HTTPStatus.OK,
+                                      lambda r: r.json()['users'])
 
-    def create_group_user(self):
-        pass
+    def create_group_user(self, group_id: str, user_id: str):
+        url = f'{self.base_uri}/group/{group_id}/users/{user_id}'
+        response = requests.post(
+            url=url,
+            headers=json_headers)
+        return self.__handle_response(response, HTTPStatus.OK,
+                                      lambda r: r.ok)
 
-    def delete_group_user(self):
-        pass
+    def delete_group_user(self, group_id: str, user_id: str):
+        url = f'{self.base_uri}/group/{group_id}/users/{user_id}'
+        response = requests.delete(
+            url=url,
+            headers=json_headers)
+        return self.__handle_response(response, HTTPStatus.OK,
+                                      lambda r: r.ok)
 
     def read_group_annotations(self, group_id: str):
         url = f'{self.base_uri}/group/{group_id}/annotations'
@@ -208,21 +239,21 @@ class ElucidateClient():
             url=url,
             headers=json_headers)
         return self.__handle_response(response, HTTPStatus.OK,
-                                      lambda r: r.json())
+                                      lambda r: r.json()['annotations'])
 
     def create_group_annotation(self, group_id: str, annotation_identifier: AnnotationIdentifier):
         url = f'{self.base_uri}/group/{group_id}/annotation/{annotation_identifier.container_uuid}/{annotation_identifier.uuid}'
         expected_status = HTTPStatus.OK
         response = requests.post(url=url)
-        return self.__handle_response(response, HTTPStatus.CREATED,
-                                      lambda r: r.json())
+        return self.__handle_response(response, expected_status,
+                                      lambda r: r.ok)
 
     def delete_group_annotation(self, group_id: str, annotation_identifier: AnnotationIdentifier):
         url = f'{self.base_uri}/group/{group_id}/annotation/{annotation_identifier.container_uuid}/{annotation_identifier.uuid}'
         expected_status = HTTPStatus.OK
         response = requests.delete(url=url)
-        return self.__handle_response(response, HTTPStatus.NO_CONTENT,
-                                      lambda r: r.json())
+        return self.__handle_response(response, expected_status,
+                                      lambda r: r.ok)
 
     def __handle_response(self, response: Response, expected_status_code: int, result_producer):
         if (response.status_code == expected_status_code):
