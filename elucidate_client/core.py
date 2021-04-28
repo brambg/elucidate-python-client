@@ -1,3 +1,4 @@
+from datetime import datetime
 from http import HTTPStatus
 from typing import Any
 
@@ -86,13 +87,14 @@ class ElucidateClient():
         return self.__handle_response(response, HTTPStatus.OK,
                                       lambda r: r.json())
 
-    def create_annotation(self, container_id: ContainerIdentifier, body, target):
+    def create_annotation(self, container_id: ContainerIdentifier, body, target, custom: dict = {}):
         annotation = {
             "@context": "http://www.w3.org/ns/anno.jsonld",
             "type": "Annotation",
             "body": body,
             "target": target
         }
+        annotation.update(custom)
         response = requests.post(
             url=container_id.url,
             headers=jsonld_headers,
@@ -100,6 +102,7 @@ class ElucidateClient():
         return self.__handle_response(response, HTTPStatus.CREATED,
                                       lambda r: AnnotationIdentifier(r.headers['location'], r.headers['etag'][3:-1]))
 
+    # TODO: Annotation Histories
     def read_annotation(self, annotation_identifier: AnnotationIdentifier):
         url = f'{self.base_uri}/{self.version}/{annotation_identifier.container_uuid}/{annotation_identifier.uuid}'
         response = requests.get(
@@ -136,26 +139,182 @@ class ElucidateClient():
         return self.__handle_response(response, HTTPStatus.NO_CONTENT,
                                       lambda r: r.ok)
 
-    def search_by_body(self):
-        pass
+    def __search_by_part(self, part: str, fields: str, value: str, strict: bool = False, xywh: str = None,
+                         t: str = None, creator: str = None, generator: str = None):
+        url = f'{self.base_uri}/w3c/services/search/{part}'
+        params = dict(fields=fields, value=value, strict=strict)
+        if (xywh != None):
+            params['xywh'] = xywh
+        if (t != None):
+            params['t'] = t
+        if (creator != None):
+            params['creator'] = creator
+        if (generator != None):
+            params['generator'] = generator
+        response = requests.get(
+            url=url,
+            params=params
+        )
+        return self.__handle_response(response, HTTPStatus.OK,
+                                      lambda r: r.json())
 
-    def search_by_target(self):
-        pass
+    def search_by_body_id(self, value: str, strict: bool = False, xywh: str = None, t: str = None,
+                          creator: str = None, generator: str = None):
+        return self.__search_by_part('body', 'id', value, strict, xywh, t, creator, generator)
 
-    def search_by_creator(self):
-        pass
+    def search_by_body_source(self, value: str, strict: bool = False, xywh: str = None, t: str = None,
+                              creator: str = None, generator: str = None):
+        return self.__search_by_part('body', 'source', value, strict, xywh, t, creator, generator)
 
-    def search_by_generator(self):
-        pass
+    def search_by_target_id(self, value: str, strict: bool = False, xywh: str = None, t: str = None,
+                            creator: str = None, generator: str = None):
+        return self.__search_by_part('target', 'id', value, strict, xywh, t, creator, generator)
 
-    def search_by_created(self):
-        pass
+    def search_by_target_source(self, value: str, strict: bool = False, xywh: str = None, t: str = None,
+                                creator: str = None, generator: str = None):
+        return self.__search_by_part('target', 'source', value, strict, xywh, t, creator, generator)
 
-    def search_by_modified(self):
-        pass
+    def __search_by_role(self, role: str, levels: str, type: str, value: str, strict: bool = False):
+        url = f'{self.base_uri}/w3c/services/search/{role}'
+        params = dict(levels=levels, type=type, value=value, strict=strict)
+        response = requests.get(
+            url=url,
+            params=params
+        )
+        return self.__handle_response(response, HTTPStatus.OK,
+                                      lambda r: r.json())
 
-    def search_by_generated(self):
-        pass
+    def search_by_annotation_creator_id(self, value: str, strict: bool = False):
+        return self.__search_by_role(role='creator', levels='annotation', type='id', value=value, strict=strict)
+
+    def search_by_annotation_creator_name(self, value: str, strict: bool = False):
+        return self.__search_by_role(role='creator', levels='annotation', type='name', value=value, strict=strict)
+
+    def search_by_annotation_creator_nickname(self, value: str, strict: bool = False):
+        return self.__search_by_role(role='creator', levels='annotation', type='nickname', value=value, strict=strict)
+
+    def search_by_annotation_creator_email(self, value: str, strict: bool = False):
+        return self.__search_by_role(role='creator', levels='annotation', type='email', value=value, strict=strict)
+
+    def search_by_annotation_creator_emailsha1(self, value: str, strict: bool = False):
+        return self.__search_by_role(role='creator', levels='annotation', type='emailsha1', value=value, strict=strict)
+
+    def search_by_annotation_generator_id(self, value: str, strict: bool = False):
+        return self.__search_by_role(role='generator', levels='annotation', type='id', value=value, strict=strict)
+
+    def search_by_annotation_generator_name(self, value: str, strict: bool = False):
+        return self.__search_by_role(role='generator', levels='annotation', type='name', value=value, strict=strict)
+
+    def search_by_annotation_generator_nickname(self, value: str, strict: bool = False):
+        return self.__search_by_role(role='generator', levels='annotation', type='nickname', value=value, strict=strict)
+
+    def search_by_annotation_generator_email(self, value: str, strict: bool = False):
+        return self.__search_by_role(role='generator', levels='annotation', type='email', value=value, strict=strict)
+
+    def search_by_annotation_generator_emailsha1(self, value: str, strict: bool = False):
+        return self.__search_by_role(role='generator', levels='annotation', type='emailsha1', value=value,
+                                     strict=strict)
+
+    def search_by_body_creator_id(self, value: str, strict: bool = False):
+        return self.__search_by_role(role='creator', levels='body', type='id', value=value, strict=strict)
+
+    def search_by_body_creator_name(self, value: str, strict: bool = False):
+        return self.__search_by_role(role='creator', levels='body', type='name', value=value, strict=strict)
+
+    def search_by_body_creator_nickname(self, value: str, strict: bool = False):
+        return self.__search_by_role(role='creator', levels='body', type='nickname', value=value, strict=strict)
+
+    def search_by_body_creator_email(self, value: str, strict: bool = False):
+        return self.__search_by_role(role='creator', levels='body', type='email', value=value, strict=strict)
+
+    def search_by_body_creator_emailsha1(self, value: str, strict: bool = False):
+        return self.__search_by_role(role='creator', levels='body', type='emailsha1', value=value, strict=strict)
+
+    def search_by_body_generator_id(self, value: str, strict: bool = False):
+        return self.__search_by_role(role='generator', levels='body', type='id', value=value, strict=strict)
+
+    def search_by_body_generator_name(self, value: str, strict: bool = False):
+        return self.__search_by_role(role='generator', levels='body', type='name', value=value, strict=strict)
+
+    def search_by_body_generator_nickname(self, value: str, strict: bool = False):
+        return self.__search_by_role(role='generator', levels='body', type='nickname', value=value, strict=strict)
+
+    def search_by_body_generator_email(self, value: str, strict: bool = False):
+        return self.__search_by_role(role='generator', levels='body', type='email', value=value, strict=strict)
+
+    def search_by_body_generator_emailsha1(self, value: str, strict: bool = False):
+        return self.__search_by_role(role='generator', levels='body', type='emailsha1', value=value, strict=strict)
+
+    def search_by_target_creator_id(self, value: str, strict: bool = False):
+        return self.__search_by_role(role='creator', levels='target', type='id', value=value, strict=strict)
+
+    def search_by_target_creator_name(self, value: str, strict: bool = False):
+        return self.__search_by_role(role='creator', levels='target', type='name', value=value, strict=strict)
+
+    def search_by_target_creator_nickname(self, value: str, strict: bool = False):
+        return self.__search_by_role(role='creator', levels='target', type='nickname', value=value, strict=strict)
+
+    def search_by_target_creator_email(self, value: str, strict: bool = False):
+        return self.__search_by_role(role='creator', levels='target', type='email', value=value, strict=strict)
+
+    def search_by_target_creator_emailsha1(self, value: str, strict: bool = False):
+        return self.__search_by_role(role='creator', levels='target', type='emailsha1', value=value, strict=strict)
+
+    def search_by_target_generator_id(self, value: str, strict: bool = False):
+        return self.__search_by_role(role='generator', levels='target', type='id', value=value, strict=strict)
+
+    def search_by_target_generator_name(self, value: str, strict: bool = False):
+        return self.__search_by_role(role='generator', levels='target', type='name', value=value, strict=strict)
+
+    def search_by_target_generator_nickname(self, value: str, strict: bool = False):
+        return self.__search_by_role(role='generator', levels='target', type='nickname', value=value, strict=strict)
+
+    def search_by_target_generator_email(self, value: str, strict: bool = False):
+        return self.__search_by_role(role='generator', levels='target', type='email', value=value, strict=strict)
+
+    def search_by_target_generator_emailsha1(self, value: str, strict: bool = False):
+        return self.__search_by_role(role='generator', levels='target', type='emailsha1', value=value, strict=strict)
+
+    def __search_by_temporal(self, levels: str, types: str, since: datetime):
+        url = f'{self.base_uri}/w3c/services/search/temporal'
+        since_param = since.isoformat()
+        if (since.microsecond == 0):
+            since_param += ".00000"
+        since_param += 'Z'
+        params = dict(levels=levels, types=types, since=since_param)
+        response = requests.get(
+            url=url,
+            params=params
+        )
+        return self.__handle_response(response, HTTPStatus.OK,
+                                      lambda r: r.json())
+
+    def search_by_annotation_created_since(self, since: datetime):
+        return self.__search_by_temporal(levels='annotation', types='created', since=since)
+
+    def search_by_annotation_modified_since(self, since: datetime):
+        return self.__search_by_temporal(levels='annotation', types='modified', since=since)
+
+    def search_by_annotation_generated_since(self, since: datetime):
+        return self.__search_by_temporal(levels='annotation', types='generated', since=since)
+
+    def search_by_body_created_since(self, since: datetime):
+        return self.__search_by_temporal(levels='body', types='created', since=since)
+
+    def search_by_body_modified_since(self, since: datetime):
+        return self.__search_by_temporal(levels='body', types='modified', since=since)
+
+    def search_by_body_generated_since(self, since: datetime):
+        return self.__search_by_temporal(levels='body', types='generated', since=since)
+
+    def search_by_target_created_since(self, since: datetime):
+        return self.__search_by_temporal(levels='target', types='created', since=since)
+
+    def search_by_target_modified_since(self, since: datetime):
+        return self.__search_by_temporal(levels='target', types='modified', since=since)
+
+    def search_by_target_generated_since(self, since: datetime):
+        return self.__search_by_temporal(levels='target', types='generated', since=since)
 
     def __get_statistics(self, part: str, field: str):
         url = f'{self.base_uri}/{self.version}/services/stats/{part}'
@@ -178,11 +337,35 @@ class ElucidateClient():
     def get_target_source_statistics(self):
         return self.__get_statistics('target', 'source')
 
-    def do_batch_update(self):
-        pass
+    def do_batch_update(self, body, target):
+        url = f'{self.base_uri}/w3c/services/batch/update'
+        json = {
+            "@context": "http://www.w3.org/ns/anno.jsonld",
+            "body": body,
+            "target": target
+        }
+        response = requests.post(
+            url=url,
+            headers=jsonld_headers,
+            json=json
+        )
+        return self.__handle_response(response, HTTPStatus.OK,
+                                      lambda r: r.json())
 
-    def do_batch_delete(self):
-        pass
+    def do_batch_delete(self, body, target):
+        url = f'{self.base_uri}/w3c/services/batch/delete'
+        json = {
+            "@context": "http://www.w3.org/ns/anno.jsonld",
+            "body": body,
+            "target": target
+        }
+        response = requests.post(
+            url=url,
+            headers=jsonld_headers,
+            json=json
+        )
+        return self.__handle_response(response, HTTPStatus.OK,
+                                      lambda r: r.json())
 
     def read_current_user(self):
         url = f'{self.base_uri}/user/current'
