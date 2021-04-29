@@ -7,4 +7,4 @@
 
 # documentation
 
-See [the notebooks](https://github.com/brambg/elucidate-python-client/notebooks)
+See [the notebooks](https://github.com/brambg/elucidate-python-client/tree/main/notebooks)
