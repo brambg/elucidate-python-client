@@ -16,8 +16,7 @@ class ElucidateClientTestSuite(unittest.TestCase):
         ec = ElucidateClient(BASE_URI)
         container_id = ec.create_container(label='Annotation Container')
         assert container_id != None
-        ic(container_id.url)
-        ic(container_id.uuid)
+        ic(container_id)
 
         body = {
             "type": "TextualBody",
@@ -27,19 +26,24 @@ class ElucidateClientTestSuite(unittest.TestCase):
         annotation_id = ec.create_annotation(container_id=container_id, body=body, target=target,
                                              custom={"motivation": "tagging"})
         assert annotation_id != None
-        ic(annotation_id.url)
-        ic(annotation_id.container_uuid)
-        ic(annotation_id.uuid)
-        ic(annotation_id.etag)
+        ic(annotation_id)
 
         annotation = ec.read_annotation(annotation_id)
         ic(annotation)
 
-        deleted = ec.delete_annotation(annotation_id)
+        new_body = {
+            "type": "TextualBody",
+            "value": "This page is massive!"
+        }
+        new_target = "http://www.example.com/index.html"
+        updated_annotation_id = ec.update_annotation(annotation_id, new_body, new_target)
+        ic(updated_annotation_id)
+
+        deleted = ec.delete_annotation(updated_annotation_id)
         assert deleted == True
 
         try:
-            annotation = ec.read_annotation(annotation_id)
+            annotation = ec.read_annotation(updated_annotation_id)
             ic(annotation)
         except Exception as e:
             ic(e)

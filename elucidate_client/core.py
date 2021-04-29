@@ -37,6 +37,12 @@ class ContainerIdentifier():
         self.url = url
         self.uuid = url.split('/')[-2]
 
+    def __str__(self):
+        return f"ContainerIdentifier:\n  url = {self.url}\n  uuid = {self.uuid}"
+
+    def __repr__(self):
+        return self.__str__()
+
 
 class AnnotationIdentifier():
     def __init__(self, url: str, etag: str):
@@ -46,6 +52,12 @@ class AnnotationIdentifier():
         self.container_uuid = url_split[-2]
         self.etag = etag
 
+    def __str__(self):
+        return f"AnnotationIdentifier:\n  url = {self.url}\n  container_uuid = {self.container_uuid}\n  uuid = {self.uuid}\n  etag = {self.etag}"
+
+    def __repr__(self):
+        return self.__str__()
+
 
 class ElucidateClient():
     def __init__(self, base_uri: str, raise_exceptions: bool = True):
@@ -53,13 +65,33 @@ class ElucidateClient():
         self.version = 'w3c'
         self.raise_exceptions = raise_exceptions
 
+    def __str__(self):
+        return f"ElucidateClient:\n  base_uri = {self.base_uri}\n  version = {self.version}\n  raise_exceptions = {self.raise_exceptions}"
+
+    def __repr__(self):
+        return self.__str__()
+
     def use_w3c(self):
+        """Switch to using the W3C Web Annotation format"""
         self.version = 'w3c'
 
     def use_oa(self):
+        """Switch to using the Open Annotation format"""
         self.version = 'oa'
 
     def create_container(self, label: str = 'A Container for Web Annotations'):
+        """Create a new container for annotations
+
+        Parameters
+        ----------
+        label : str,optional
+            The label of the Container, to distinguish this container from others
+            The default label is 'A Container for Web Annotations'
+
+        Returns
+        -------
+        a ContainerIdentifier
+        """
         url = f'{self.base_uri}/w3c/'
         body = {
             "@context": [
@@ -112,7 +144,7 @@ class ElucidateClient():
         return self.__handle_response(response, HTTPStatus.OK,
                                       lambda r: r.json())
 
-    def update_annotation(self, annotation_identifier: AnnotationIdentifier, body, target):
+    def update_annotation(self, annotation_identifier: AnnotationIdentifier, body, target, custom: dict = {}):
         url = f'{self.base_uri}/{self.version}/{annotation_identifier.container_uuid}/{annotation_identifier.uuid}'
         annotation = {
             "@context": "http://www.w3.org/ns/anno.jsonld",
@@ -120,6 +152,7 @@ class ElucidateClient():
             "body": body,
             "target": target
         }
+        annotation.update(custom)
         put_headers = {'If-Match': (annotation_identifier.etag)}
         put_headers.update(jsonld_headers)
         response = requests.put(
@@ -127,7 +160,7 @@ class ElucidateClient():
             headers=put_headers,
             json=annotation)
         return self.__handle_response(response, HTTPStatus.OK,
-                                      lambda r: r.json())
+                                      lambda r: AnnotationIdentifier(annotation_identifier.url, r.headers['etag'][3:-1]))
 
     def delete_annotation(self, annotation_identifier: AnnotationIdentifier):
         url = f'{self.base_uri}/{self.version}/{annotation_identifier.container_uuid}/{annotation_identifier.uuid}'
