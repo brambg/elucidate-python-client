@@ -3,8 +3,8 @@
 
 # install
 
-    pip install git+https://github.com/brambg/elucidate-python-client.git
+    pip install git+https://github.com/knaw-huc/elucidate-python-client.git
 
 # documentation
 
-See [the notebooks](https://github.com/brambg/elucidate-python-client/tree/main/notebooks)
+See [the notebooks](https://github.com/knaw-huc/elucidate-python-client/tree/main/notebooks)
