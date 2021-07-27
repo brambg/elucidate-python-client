@@ -60,10 +60,11 @@ class AnnotationIdentifier():
 
 
 class ElucidateClient():
-    def __init__(self, base_uri: str, raise_exceptions: bool = True):
+    def __init__(self, base_uri: str, raise_exceptions: bool = True, verbose: bool = False):
         self.base_uri = base_uri
         self.version = 'w3c'
         self.raise_exceptions = raise_exceptions
+        self.verbose = verbose
 
     def __str__(self):
         return f"ElucidateClient:\n  base_uri = {self.base_uri}\n  version = {self.version}\n  raise_exceptions = {self.raise_exceptions}"
@@ -80,17 +81,13 @@ class ElucidateClient():
         self.version = 'oa'
 
     def create_container(self, label: str = 'A Container for Web Annotations'):
-        """Create a new container for annotations
+        """
+        Create a new container for annotations
 
-        Parameters
-        ----------
-        label : str,optional
-            The label of the Container, to distinguish this container from others
-            The default label is 'A Container for Web Annotations'
-
-        Returns
-        -------
-        a ContainerIdentifier
+        :param label: The label of the Container, to distinguish this container from others. The default label is 'A Container for Web Annotations'
+        :type label: str
+        :return: The identifier of the created container
+        :rtype: ContainerIdentifier
         """
         url = f'{self.base_uri}/w3c/'
         body = {
@@ -112,6 +109,14 @@ class ElucidateClient():
                                       lambda r: ContainerIdentifier(r.headers['location']))
 
     def read_container(self, container_identifier: ContainerIdentifier):
+        """
+        Read the container identified by the given ContainerIdentifier
+
+        :param container_identifier:
+        :type container_identifier: ContainerIdentifier
+        :return: The Container as json-ld
+        :rtype: dict
+        """
         url = f'{self.base_uri}/{self.version}/{container_identifier.uuid}/'
         response = requests.get(
             url=url,
@@ -120,6 +125,21 @@ class ElucidateClient():
                                       lambda r: r.json())
 
     def create_annotation(self, container_id: ContainerIdentifier, body, target, custom: dict = {}):
+        """
+        Create an annotation in the container with the given ContainerIdentifier
+        You must provide at least a body and a target, and optionally provide additional elements in custom
+
+        :param container_id:
+        :type container_id: ContainerIdentifier
+        :param body:
+        :type body: Any
+        :param target:
+        :type target: Any
+        :param custom:
+        :type custom: dict
+        :return: The identifier of the generated annotation
+        :rtype: AnnotationIdentifier
+        """
         annotation = {
             "@context": "http://www.w3.org/ns/anno.jsonld",
             "type": "Annotation",
@@ -136,6 +156,13 @@ class ElucidateClient():
 
     # TODO: Annotation Histories
     def read_annotation(self, annotation_identifier: AnnotationIdentifier):
+        """
+
+        :param annotation_identifier:
+        :type annotation_identifier:
+        :return:
+        :rtype:
+        """
         url = f'{self.base_uri}/{self.version}/{annotation_identifier.container_uuid}/{annotation_identifier.uuid}'
         response = requests.get(
             url=url,
@@ -145,6 +172,19 @@ class ElucidateClient():
                                       lambda r: r.json())
 
     def update_annotation(self, annotation_identifier: AnnotationIdentifier, body, target, custom: dict = {}):
+        """
+
+        :param annotation_identifier:
+        :type annotation_identifier:
+        :param body:
+        :type body:
+        :param target:
+        :type target:
+        :param custom:
+        :type custom:
+        :return:
+        :rtype:
+        """
         url = f'{self.base_uri}/{self.version}/{annotation_identifier.container_uuid}/{annotation_identifier.uuid}'
         annotation = {
             "@context": "http://www.w3.org/ns/anno.jsonld",
@@ -160,9 +200,17 @@ class ElucidateClient():
             headers=put_headers,
             json=annotation)
         return self.__handle_response(response, HTTPStatus.OK,
-                                      lambda r: AnnotationIdentifier(annotation_identifier.url, r.headers['etag'][3:-1]))
+                                      lambda r: AnnotationIdentifier(annotation_identifier.url,
+                                                                     r.headers['etag'][3:-1]))
 
     def delete_annotation(self, annotation_identifier: AnnotationIdentifier):
+        """
+
+        :param annotation_identifier:
+        :type annotation_identifier:
+        :return:
+        :rtype:
+        """
         url = f'{self.base_uri}/{self.version}/{annotation_identifier.container_uuid}/{annotation_identifier.uuid}'
         del_headers = {'If-Match': (annotation_identifier.etag)}
         del_headers.update(jsonld_headers)
@@ -193,18 +241,86 @@ class ElucidateClient():
 
     def search_by_body_id(self, value: str, strict: bool = False, xywh: str = None, t: str = None,
                           creator: str = None, generator: str = None):
+        """
+
+        :param value:
+        :type value: str
+        :param strict:
+        :type strict: bool
+        :param xywh:
+        :type xywh:
+        :param t:
+        :type t:
+        :param creator:
+        :type creator:
+        :param generator:
+        :type generator:
+        :return:
+        :rtype:
+        """
         return self.__search_by_part('body', 'id', value, strict, xywh, t, creator, generator)
 
     def search_by_body_source(self, value: str, strict: bool = False, xywh: str = None, t: str = None,
                               creator: str = None, generator: str = None):
+        """
+
+        :param value:
+        :type value: str
+        :param strict:
+        :type strict: bool
+        :param xywh:
+        :type xywh:
+        :param t:
+        :type t:
+        :param creator:
+        :type creator:
+        :param generator:
+        :type generator:
+        :return:
+        :rtype:
+        """
         return self.__search_by_part('body', 'source', value, strict, xywh, t, creator, generator)
 
     def search_by_target_id(self, value: str, strict: bool = False, xywh: str = None, t: str = None,
                             creator: str = None, generator: str = None):
+        """
+
+        :param value:
+        :type value: str
+        :param strict:
+        :type strict: bool
+        :param xywh:
+        :type xywh:
+        :param t:
+        :type t:
+        :param creator:
+        :type creator:
+        :param generator:
+        :type generator:
+        :return:
+        :rtype:
+        """
         return self.__search_by_part('target', 'id', value, strict, xywh, t, creator, generator)
 
     def search_by_target_source(self, value: str, strict: bool = False, xywh: str = None, t: str = None,
                                 creator: str = None, generator: str = None):
+        """
+
+        :param value:
+        :type value: str
+        :param strict:
+        :type strict: bool
+        :param xywh:
+        :type xywh:
+        :param t:
+        :type t:
+        :param creator:
+        :type creator:
+        :param generator:
+        :type generator:
+        :return:
+        :rtype:
+        """
         return self.__search_by_part('target', 'source', value, strict, xywh, t, creator, generator)
 
     def __search_by_role(self, role: str, levels: str, type: str, value: str, strict: bool = False):
@@ -218,94 +334,364 @@ class ElucidateClient():
                                       lambda r: r.json())
 
     def search_by_annotation_creator_id(self, value: str, strict: bool = False):
+        """
+
+        :param value:
+        :type value: str
+        :param strict:
+        :type strict: bool
+        :return:
+        :rtype:
+        """
         return self.__search_by_role(role='creator', levels='annotation', type='id', value=value, strict=strict)
 
     def search_by_annotation_creator_name(self, value: str, strict: bool = False):
+        """
+
+        :param value:
+        :type value: str
+        :param strict:
+        :type strict: bool
+        :return:
+        :rtype:
+        """
         return self.__search_by_role(role='creator', levels='annotation', type='name', value=value, strict=strict)
 
     def search_by_annotation_creator_nickname(self, value: str, strict: bool = False):
+        """
+
+        :param value:
+        :type value: str
+        :param strict:
+        :type strict: bool
+        :return:
+        :rtype:
+        """
         return self.__search_by_role(role='creator', levels='annotation', type='nickname', value=value, strict=strict)
 
     def search_by_annotation_creator_email(self, value: str, strict: bool = False):
+        """
+
+        :param value:
+        :type value: str
+        :param strict:
+        :type strict: bool
+        :return:
+        :rtype:
+        """
         return self.__search_by_role(role='creator', levels='annotation', type='email', value=value, strict=strict)
 
     def search_by_annotation_creator_emailsha1(self, value: str, strict: bool = False):
+        """
+
+        :param value:
+        :type value: str
+        :param strict:
+        :type strict: bool
+        :return:
+        :rtype:
+        """
         return self.__search_by_role(role='creator', levels='annotation', type='emailsha1', value=value, strict=strict)
 
     def search_by_annotation_generator_id(self, value: str, strict: bool = False):
+        """
+
+        :param value:
+        :type value: str
+        :param strict:
+        :type strict: bool
+        :return:
+        :rtype:
+        """
         return self.__search_by_role(role='generator', levels='annotation', type='id', value=value, strict=strict)
 
     def search_by_annotation_generator_name(self, value: str, strict: bool = False):
+        """
+
+        :param value:
+        :type value: str
+        :param strict:
+        :type strict: bool
+        :return:
+        :rtype:
+        """
         return self.__search_by_role(role='generator', levels='annotation', type='name', value=value, strict=strict)
 
     def search_by_annotation_generator_nickname(self, value: str, strict: bool = False):
+        """
+
+        :param value:
+        :type value: str
+        :param strict:
+        :type strict: bool
+        :return:
+        :rtype:
+        """
         return self.__search_by_role(role='generator', levels='annotation', type='nickname', value=value, strict=strict)
 
     def search_by_annotation_generator_email(self, value: str, strict: bool = False):
+        """
+
+        :param value:
+        :type value: str
+        :param strict:
+        :type strict: bool
+        :return:
+        :rtype:
+        """
         return self.__search_by_role(role='generator', levels='annotation', type='email', value=value, strict=strict)
 
     def search_by_annotation_generator_emailsha1(self, value: str, strict: bool = False):
+        """
+
+        :param value:
+        :type value: str
+        :param strict:
+        :type strict: bool
+        :return:
+        :rtype:
+        """
         return self.__search_by_role(role='generator', levels='annotation', type='emailsha1', value=value,
                                      strict=strict)
 
     def search_by_body_creator_id(self, value: str, strict: bool = False):
+        """
+
+        :param value:
+        :type value: str
+        :param strict:
+        :type strict: bool
+        :return:
+        :rtype:
+        """
         return self.__search_by_role(role='creator', levels='body', type='id', value=value, strict=strict)
 
     def search_by_body_creator_name(self, value: str, strict: bool = False):
+        """
+
+        :param value:
+        :type value: str
+        :param strict:
+        :type strict: bool
+        :return:
+        :rtype:
+        """
         return self.__search_by_role(role='creator', levels='body', type='name', value=value, strict=strict)
 
     def search_by_body_creator_nickname(self, value: str, strict: bool = False):
+        """
+
+        :param value:
+        :type value: str
+        :param strict:
+        :type strict: bool
+        :return:
+        :rtype:
+        """
         return self.__search_by_role(role='creator', levels='body', type='nickname', value=value, strict=strict)
 
     def search_by_body_creator_email(self, value: str, strict: bool = False):
+        """
+
+        :param value:
+        :type value: str
+        :param strict:
+        :type strict: bool
+        :return:
+        :rtype:
+        """
         return self.__search_by_role(role='creator', levels='body', type='email', value=value, strict=strict)
 
     def search_by_body_creator_emailsha1(self, value: str, strict: bool = False):
+        """
+
+        :param value:
+        :type value: str
+        :param strict:
+        :type strict: bool
+        :return:
+        :rtype:
+        """
         return self.__search_by_role(role='creator', levels='body', type='emailsha1', value=value, strict=strict)
 
     def search_by_body_generator_id(self, value: str, strict: bool = False):
+        """
+
+        :param value:
+        :type value: str
+        :param strict:
+        :type strict: bool
+        :return:
+        :rtype:
+        """
         return self.__search_by_role(role='generator', levels='body', type='id', value=value, strict=strict)
 
     def search_by_body_generator_name(self, value: str, strict: bool = False):
+        """
+
+        :param value:
+        :type value: str
+        :param strict:
+        :type strict: bool
+        :return:
+        :rtype:
+        """
         return self.__search_by_role(role='generator', levels='body', type='name', value=value, strict=strict)
 
     def search_by_body_generator_nickname(self, value: str, strict: bool = False):
+        """
+
+        :param value:
+        :type value: str
+        :param strict:
+        :type strict: bool
+        :return:
+        :rtype:
+        """
         return self.__search_by_role(role='generator', levels='body', type='nickname', value=value, strict=strict)
 
     def search_by_body_generator_email(self, value: str, strict: bool = False):
+        """
+
+        :param value:
+        :type value: str
+        :param strict:
+        :type strict: bool
+        :return:
+        :rtype:
+        """
         return self.__search_by_role(role='generator', levels='body', type='email', value=value, strict=strict)
 
     def search_by_body_generator_emailsha1(self, value: str, strict: bool = False):
+        """
+
+        :param value:
+        :type value: str
+        :param strict:
+        :type strict: bool
+        :return:
+        :rtype:
+        """
         return self.__search_by_role(role='generator', levels='body', type='emailsha1', value=value, strict=strict)
 
     def search_by_target_creator_id(self, value: str, strict: bool = False):
+        """
+
+        :param value:
+        :type value: str
+        :param strict:
+        :type strict: bool
+        :return:
+        :rtype:
+        """
         return self.__search_by_role(role='creator', levels='target', type='id', value=value, strict=strict)
 
     def search_by_target_creator_name(self, value: str, strict: bool = False):
+        """
+
+        :param value:
+        :type value: str
+        :param strict:
+        :type strict: bool
+        :return:
+        :rtype:
+        """
         return self.__search_by_role(role='creator', levels='target', type='name', value=value, strict=strict)
 
     def search_by_target_creator_nickname(self, value: str, strict: bool = False):
+        """
+
+        :param value:
+        :type value: str
+        :param strict:
+        :type strict: bool
+        :return:
+        :rtype:
+        """
         return self.__search_by_role(role='creator', levels='target', type='nickname', value=value, strict=strict)
 
     def search_by_target_creator_email(self, value: str, strict: bool = False):
+        """
+
+        :param value:
+        :type value: str
+        :param strict:
+        :type strict: bool
+        :return:
+        :rtype:
+        """
         return self.__search_by_role(role='creator', levels='target', type='email', value=value, strict=strict)
 
     def search_by_target_creator_emailsha1(self, value: str, strict: bool = False):
+        """
+
+        :param value:
+        :type value: str
+        :param strict:
+        :type strict: bool
+        :return:
+        :rtype:
+        """
         return self.__search_by_role(role='creator', levels='target', type='emailsha1', value=value, strict=strict)
 
     def search_by_target_generator_id(self, value: str, strict: bool = False):
+        """
+
+        :param value:
+        :type value:
+        :param strict:
+        :type strict:
+        :return:
+        :rtype:
+        """
         return self.__search_by_role(role='generator', levels='target', type='id', value=value, strict=strict)
 
     def search_by_target_generator_name(self, value: str, strict: bool = False):
+        """
+
+        :param value:
+        :type value:
+        :param strict:
+        :type strict:
+        :return:
+        :rtype:
+        """
         return self.__search_by_role(role='generator', levels='target', type='name', value=value, strict=strict)
 
     def search_by_target_generator_nickname(self, value: str, strict: bool = False):
+        """
+
+        :param value:
+        :type value:
+        :param strict:
+        :type strict:
+        :return:
+        :rtype:
+        """
         return self.__search_by_role(role='generator', levels='target', type='nickname', value=value, strict=strict)
 
     def search_by_target_generator_email(self, value: str, strict: bool = False):
+        """
+
+        :param value:
+        :type value:
+        :param strict:
+        :type strict:
+        :return:
+        :rtype:
+        """
         return self.__search_by_role(role='generator', levels='target', type='email', value=value, strict=strict)
 
     def search_by_target_generator_emailsha1(self, value: str, strict: bool = False):
+        """
+
+        :param value:
+        :type value:
+        :param strict:
+        :type strict:
+        :return:
+        :rtype:
+        """
         return self.__search_by_role(role='generator', levels='target', type='emailsha1', value=value, strict=strict)
 
     def __search_by_temporal(self, levels: str, types: str, since: datetime):
@@ -323,30 +709,93 @@ class ElucidateClient():
                                       lambda r: r.json())
 
     def search_by_annotation_created_since(self, since: datetime):
+        """
+
+        :param since:
+        :type since:
+        :return:
+        :rtype:
+        """
         return self.__search_by_temporal(levels='annotation', types='created', since=since)
 
     def search_by_annotation_modified_since(self, since: datetime):
+        """
+
+        :param since:
+        :type since:
+        :return:
+        :rtype:
+        """
         return self.__search_by_temporal(levels='annotation', types='modified', since=since)
 
     def search_by_annotation_generated_since(self, since: datetime):
+        """
+
+        :param since:
+        :type since:
+        :return:
+        :rtype:
+        """
         return self.__search_by_temporal(levels='annotation', types='generated', since=since)
 
     def search_by_body_created_since(self, since: datetime):
+        """
+
+        :param since:
+        :type since:
+        :return:
+        :rtype:
+        """
         return self.__search_by_temporal(levels='body', types='created', since=since)
 
     def search_by_body_modified_since(self, since: datetime):
+        """
+
+        :param since:
+        :type since:
+        :return:
+        :rtype:
+        """
         return self.__search_by_temporal(levels='body', types='modified', since=since)
 
     def search_by_body_generated_since(self, since: datetime):
+        """
+
+        :param since:
+        :type since:
+        :return:
+        :rtype:
+        """
         return self.__search_by_temporal(levels='body', types='generated', since=since)
 
     def search_by_target_created_since(self, since: datetime):
+        """
+
+        :param since:
+        :type since:
+        :return:
+        :rtype:
+        """
         return self.__search_by_temporal(levels='target', types='created', since=since)
 
     def search_by_target_modified_since(self, since: datetime):
+        """
+
+        :param since:
+        :type since:
+        :return:
+        :rtype:
+        """
         return self.__search_by_temporal(levels='target', types='modified', since=since)
 
     def search_by_target_generated_since(self, since: datetime):
+        """
+
+        :param since:
+        :type since:
+        :return:
+        :rtype:
+        """
         return self.__search_by_temporal(levels='target', types='generated', since=since)
 
     def __get_statistics(self, part: str, field: str):
@@ -359,18 +808,47 @@ class ElucidateClient():
                                       lambda r: r.json())
 
     def get_body_id_statistics(self):
+        """
+
+        :return:
+        :rtype:
+        """
         return self.__get_statistics('body', 'id')
 
     def get_body_source_statistics(self):
+        """
+
+        :return:
+        :rtype:
+        """
         return self.__get_statistics('body', 'source')
 
     def get_target_id_statistics(self):
+        """
+
+        :return:
+        :rtype:
+        """
         return self.__get_statistics('target', 'id')
 
     def get_target_source_statistics(self):
+        """
+
+        :return:
+        :rtype:
+        """
         return self.__get_statistics('target', 'source')
 
     def do_batch_update(self, body, target):
+        """
+
+        :param body:
+        :type body:
+        :param target:
+        :type target:
+        :return:
+        :rtype:
+        """
         url = f'{self.base_uri}/w3c/services/batch/update'
         json = {
             "@context": "http://www.w3.org/ns/anno.jsonld",
@@ -386,6 +864,15 @@ class ElucidateClient():
                                       lambda r: r.json())
 
     def do_batch_delete(self, body, target):
+        """
+
+        :param body:
+        :type body:
+        :param target:
+        :type target:
+        :return:
+        :rtype:
+        """
         url = f'{self.base_uri}/w3c/services/batch/delete'
         json = {
             "@context": "http://www.w3.org/ns/anno.jsonld",
@@ -401,6 +888,11 @@ class ElucidateClient():
                                       lambda r: r.json())
 
     def read_current_user(self):
+        """
+
+        :return:
+        :rtype:
+        """
         url = f'{self.base_uri}/user/current'
         response = requests.get(
             url=url,
@@ -409,6 +901,13 @@ class ElucidateClient():
                                       lambda r: r.json())
 
     def create_group(self, label: str):
+        """
+
+        :param label:
+        :type label:
+        :return:
+        :rtype:
+        """
         url = f'{self.base_uri}/group'
         response = requests.post(
             url=url,
@@ -418,6 +917,13 @@ class ElucidateClient():
                                       lambda r: r.json()['id'])
 
     def read_group(self, group_id: str):
+        """
+
+        :param group_id:
+        :type group_id:
+        :return:
+        :rtype:
+        """
         url = f'{self.base_uri}/group/{group_id}'
         response = requests.get(
             url=url,
@@ -426,6 +932,13 @@ class ElucidateClient():
                                       lambda r: r.json())
 
     def read_group_users(self, group_id: str):
+        """
+
+        :param group_id:
+        :type group_id:
+        :return:
+        :rtype:
+        """
         url = f'{self.base_uri}/group/{group_id}/users'
         response = requests.get(
             url=url,
@@ -434,6 +947,15 @@ class ElucidateClient():
                                       lambda r: r.json()['users'])
 
     def create_group_user(self, group_id: str, user_id: str):
+        """
+
+        :param group_id:
+        :type group_id:
+        :param user_id:
+        :type user_id:
+        :return:
+        :rtype:
+        """
         url = f'{self.base_uri}/group/{group_id}/users/{user_id}'
         response = requests.post(
             url=url,
@@ -442,6 +964,15 @@ class ElucidateClient():
                                       lambda r: r.ok)
 
     def delete_group_user(self, group_id: str, user_id: str):
+        """
+
+        :param group_id:
+        :type group_id:
+        :param user_id:
+        :type user_id:
+        :return:
+        :rtype:
+        """
         url = f'{self.base_uri}/group/{group_id}/users/{user_id}'
         response = requests.delete(
             url=url,
@@ -450,6 +981,13 @@ class ElucidateClient():
                                       lambda r: r.ok)
 
     def read_group_annotations(self, group_id: str):
+        """
+
+        :param group_id:
+        :type group_id:
+        :return:
+        :rtype:
+        """
         url = f'{self.base_uri}/group/{group_id}/annotations'
         response = requests.get(
             url=url,
@@ -458,6 +996,15 @@ class ElucidateClient():
                                       lambda r: r.json()['annotations'])
 
     def create_group_annotation(self, group_id: str, annotation_identifier: AnnotationIdentifier):
+        """
+
+        :param group_id: The group id
+        :type group_id: str
+        :param annotation_identifier: The annotation identifier
+        :type annotation_identifier: AnnotationIdentifier
+        :return: Whether the creation succeeded
+        :rtype: bool
+        """
         url = f'{self.base_uri}/group/{group_id}/annotation/{annotation_identifier.container_uuid}/{annotation_identifier.uuid}'
         expected_status = HTTPStatus.OK
         response = requests.post(url=url)
@@ -465,6 +1012,15 @@ class ElucidateClient():
                                       lambda r: r.ok)
 
     def delete_group_annotation(self, group_id: str, annotation_identifier: AnnotationIdentifier):
+        """
+
+        :param group_id:
+        :type group_id:
+        :param annotation_identifier:
+        :type annotation_identifier:
+        :return:
+        :rtype:
+        """
         url = f'{self.base_uri}/group/{group_id}/annotation/{annotation_identifier.container_uuid}/{annotation_identifier.uuid}'
         expected_status = HTTPStatus.OK
         response = requests.delete(url=url)
@@ -472,6 +1028,9 @@ class ElucidateClient():
                                       lambda r: r.ok)
 
     def __handle_response(self, response: Response, expected_status_code: int, result_producer):
+        if (self.verbose):
+            print(f'-> {response.request.method} {response.request.url}')
+            print(f'<- {response.status_code}')
         if (response.status_code == expected_status_code):
             result = result_producer(response)
             if (self.raise_exceptions):
@@ -483,3 +1042,13 @@ class ElucidateClient():
                 raise Exception(f'{response.status_code} : {response.text}')
             else:
                 return ElucidateFailure(response)
+
+
+def split_annotation(annotation: dict):
+    body = annotation['body']
+    target = annotation['target']
+    custom = {}
+    custom_keys = [key for key in annotation.keys() if key not in ['body', 'target', '@context', 'id', 'type']]
+    for k in custom_keys:
+        custom[k] = annotation[k]
+    return (body, target, custom)
