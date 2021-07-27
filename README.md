@@ -5,7 +5,11 @@
 
 # install
 
+## using pip (currently)
     pip install git+https://github.com/knaw-huc/elucidate-python-client.git
+
+## using pip (eventually)
+    pip install elucidate-python-client
 
 # documentation
 
