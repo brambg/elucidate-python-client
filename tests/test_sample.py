@@ -8,7 +8,7 @@ from icecream import ic
 from core import ElucidateClient, ElucidateSuccess, ElucidateResponse, ContainerIdentifier, AnnotationIdentifier, \
     split_annotation
 
-BASE_URI = "http://localhost:8080/annotation"
+BASE_URI = "http://localhost:18080/annotation"
 
 
 class ElucidateClientTestSuite(unittest.TestCase):
