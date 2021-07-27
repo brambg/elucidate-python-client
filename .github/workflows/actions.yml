@@ -1,5 +1,5 @@
 # see https://sourcery.ai/blog/github-actions/
-name: Test
+name: tests
 
 on: [push, pull_request]
 
