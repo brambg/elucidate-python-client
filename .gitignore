@@ -1,7 +1,7 @@
-venv
-.idea
-**/__pycache__
-/.pytest_cache/
-/elucidate_client.egg-info/
-/build/
-/dist/
+**/__pycache__/
+*.egg-info/
+.idea/
+.pytest_cache/
+build/
+dist/
+venv/
