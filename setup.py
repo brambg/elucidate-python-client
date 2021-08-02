@@ -18,7 +18,7 @@ setup(
     author_email='bram.buitendijk@di.huc.knaw.nl',
     url='project_url',
     license=license,
-    packages=find_packages(exclude=('tests', 'docs')),
-    test_suite='nose.collector',
-    tests_require=['nose', 'nose-cover3'],
+    packages=find_packages(exclude=('tests', 'docs', 'notebooks')),
+    # test_suite='nose.collector',
+    # tests_require=['nose', 'nose-cover3'],
 )

@@ -5,7 +5,7 @@ import urllib.parse
 
 from icecream import ic
 
-from core import ElucidateClient, ElucidateSuccess, ElucidateResponse, ContainerIdentifier, AnnotationIdentifier
+from elucidate_client.core import ElucidateClient, ElucidateSuccess, ElucidateResponse, ContainerIdentifier, AnnotationIdentifier
 
 BASE_URI = "http://localhost:18080/annotation"
 
