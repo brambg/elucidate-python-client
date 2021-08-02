@@ -10,9 +10,9 @@ with open('LICENSE') as f:
     license = f.read()
 
 setup(
-    name='elucidate_client',
+    name='elucidate',
     version='0.0.2',
-    description='simple description',
+    description='client to access the elucidate-server',
     long_description=readme,
     author='Bram Buitendijk',
     author_email='bram.buitendijk@di.huc.knaw.nl',

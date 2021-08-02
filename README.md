@@ -11,6 +11,9 @@
 ## using pip (eventually)
     pip install elucidate-python-client
 
+## locally
+    python setup.py install
+
 # documentation
 
 See [the notebooks](https://github.com/knaw-huc/elucidate-python-client/tree/main/notebooks)

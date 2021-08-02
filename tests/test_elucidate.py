@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import unittest
 
-from elucidate_client.core import ElucidateSuccess, ElucidateResponse, split_annotation
+from elucidate.client import ElucidateSuccess, ElucidateResponse, split_annotation
 
 BASE_URI = "http://localhost:18080/annotation"
 
