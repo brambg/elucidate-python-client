@@ -3,14 +3,14 @@
 from setuptools import setup, find_packages
 
 
-with open('README.md') as f:
+with open('README.md', encoding='utf8') as f:
     readme = f.read()
 
-with open('LICENSE') as f:
+with open('LICENSE', encoding='utf8') as f:
     license = f.read()
 
 setup(
-    name='elucidate',
+    name='elucidate-client',
     version='0.0.2',
     description='client to access the elucidate-server',
     long_description=readme,

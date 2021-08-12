@@ -6,13 +6,22 @@
 # install
 
 ## using pip (currently)
-    pip install git+https://github.com/knaw-huc/elucidate-python-client.git
+
+```commandline
+pip install git+https://github.com/knaw-huc/elucidate-python-client.git
+```
 
 ## using pip (eventually)
-    pip install elucidate-python-client
 
-## locally
-    python setup.py install
+```commandline
+pip install elucidate-client
+```
+
+## locally, after checking out this repo first
+
+```commandline
+pip install .
+```
 
 # documentation
 
