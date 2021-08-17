@@ -80,11 +80,13 @@ class ElucidateClient():
         """Switch to using the Open Annotation format"""
         self.version = 'oa'
 
-    def create_container(self, label: str = 'A Container for Web Annotations'):
+    def create_container(self, label: str = 'A Container for Web Annotations', container_id: str = None):
         """
         Create a new container for annotations
 
         :param label: The label of the Container, to distinguish this container from others. The default label is 'A Container for Web Annotations'
+        :type label: str
+        :param container_id: The id of the Container, when omitted, elucidate autogenerates a uuid
         :type label: str
         :return: The identifier of the created container
         :rtype: ContainerIdentifier
@@ -101,9 +103,12 @@ class ElucidateClient():
             ],
             "label": label
         }
+        headers = jsonld_headers
+        if container_id:
+            headers['slug'] = container_id
         response = requests.post(
             url=url,
-            headers=jsonld_headers,
+            headers=headers,
             json=body)
         return self.__handle_response(response, HTTPStatus.CREATED,
                                       lambda r: ContainerIdentifier(r.headers['location']))
@@ -124,7 +129,22 @@ class ElucidateClient():
         return self.__handle_response(response, HTTPStatus.OK,
                                       lambda r: r.json())
 
-    def create_annotation(self, container_id: ContainerIdentifier, body, target, custom: dict = {}):
+    # def delete_container(self, container_identifier: str):
+    #     """
+    #     Delete the container identified by the given ContainerIdentifier
+    #
+    #     :param container_identifier:
+    #     :type container_identifier: ContainerIdentifier
+    #     :return: A Boolean indicating whether the delete succeeded
+    #     :rtype: bool
+    #     """
+    #     url = f'{self.base_uri}/{self.version}/{container_identifier}/'
+    #     response = requests.delete(url=url)
+    #     return self.__handle_response(response, HTTPStatus.NO_CONTENT,
+    #                                   lambda r: True)
+
+    def create_annotation(self, container_id: ContainerIdentifier, body, target, custom: dict = {},
+                          annotation_id: str = None):
         """
         Create an annotation in the container with the given ContainerIdentifier
         You must provide at least a body and a target, and optionally provide additional elements in custom
@@ -147,9 +167,12 @@ class ElucidateClient():
             "target": target
         }
         annotation.update(custom)
+        headers = jsonld_headers
+        if annotation_id:
+            headers['slug'] = annotation_id
         response = requests.post(
             url=container_id.url,
-            headers=jsonld_headers,
+            headers=headers,
             json=annotation)
         return self.__handle_response(response, HTTPStatus.CREATED,
                                       lambda r: AnnotationIdentifier(r.headers['location'], r.headers['etag'][3:-1]))

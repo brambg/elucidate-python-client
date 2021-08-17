@@ -5,7 +5,8 @@ import urllib.parse
 
 from icecream import ic
 
-from elucidate.client import ElucidateClient, ElucidateSuccess, ElucidateResponse, ContainerIdentifier, AnnotationIdentifier
+from elucidate.client import ElucidateClient, ElucidateSuccess, ElucidateResponse, ContainerIdentifier, \
+    AnnotationIdentifier
 
 BASE_URI = "http://localhost:18080/annotation"
 
@@ -583,6 +584,31 @@ class AuthorizationTestSuite(unittest.TestCase):
         ic(group_annotations)
         assert isinstance(group_annotations, list)
         assert annotation_url not in group_annotations
+
+
+class SlugTestSuite(unittest.TestCase):
+
+    def test_create_container_and_annotation_with_custom_names(self):
+        ec = ElucidateClient(BASE_URI)
+        container_name = 'custom_container_name4'
+
+        container_id = ec.create_container(label='This is the label', container_id=container_name)
+        ic(container_id)
+        expected_url = f"{BASE_URI}/{ec.version}/{container_name}/"
+        self.assertEqual(expected_url, container_id.url)
+
+        annotation_name = "custom_annotation_name"
+        annotation_id = ec.create_annotation(container_id=container_id, body={}, target={},
+                                             annotation_id=annotation_name)
+        ic(annotation_id)
+        expected_url = f"{BASE_URI}/{ec.version}/{container_name}/{annotation_name}"
+        self.assertEqual(expected_url, annotation_id.url)
+
+        ok = ec.delete_annotation(annotation_identifier=annotation_id)
+        assert ok
+
+        # ok = ec.delete_container(container_identifier=container_name)
+        # assert ok
 
 
 def get_result(response: ElucidateResponse):
