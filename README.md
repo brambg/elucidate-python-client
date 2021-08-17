@@ -1,4 +1,4 @@
-## Python Client for elucidate server
+## Python Client for [elucidate server](https://github.com/dlcs/elucidate-server)
 
 [![GitHub Actions](https://github.com/knaw-huc/elucidate-python-client/workflows/tests/badge.svg)](https://github.com/knaw-huc/elucidate-python-client/actions)
 [![Project Status: WIP – Initial development is in progress, but there has not yet been a stable, usable release suitable for the public.](https://www.repostatus.org/badges/latest/wip.svg)](https://www.repostatus.org/#wip)
