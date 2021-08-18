@@ -1,6 +1,7 @@
+import http.client
 from datetime import datetime
 from http import HTTPStatus
-from typing import Any
+from typing import Any, Union
 
 import requests
 from requests import Response
@@ -103,15 +104,16 @@ class ElucidateClient():
             ],
             "label": label
         }
-        headers = jsonld_headers
+        headers = jsonld_headers.copy()
         if container_id:
             headers['slug'] = container_id
         response = requests.post(
             url=url,
             headers=headers,
             json=body)
-        return self.__handle_response(response, HTTPStatus.CREATED,
-                                      lambda r: ContainerIdentifier(r.headers['location']))
+        return self.__handle_response(response, {
+            HTTPStatus.CREATED: lambda r: ContainerIdentifier(r.headers['location'])
+        })
 
     def read_container(self, container_identifier: ContainerIdentifier):
         """
@@ -126,8 +128,27 @@ class ElucidateClient():
         response = requests.get(
             url=url,
             headers=jsonld_headers)
-        return self.__handle_response(response, HTTPStatus.OK,
-                                      lambda r: r.json())
+        return self.__handle_response(response, {
+            HTTPStatus.OK: lambda r: r.json()
+        })
+
+    def read_container_identifier(self, name: str) -> Union[None, ContainerIdentifier]:
+        """
+        Read the ContainerIdentifier of the container identified by the given container name, or None if not found
+
+        :param container_name:
+        :type container_name: str
+        :return: The ContainerIdentifier, or None
+        :rtype: Union[None, ContainerIdentifier]
+        """
+        url = f'{self.base_uri}/{self.version}/{name}/'
+        response = requests.get(
+            url=url,
+            headers=jsonld_headers)
+        return self.__handle_response(response, {
+            HTTPStatus.OK: lambda r: ContainerIdentifier(r.json()['id']),
+            HTTPStatus.NOT_FOUND: lambda r: None
+        })
 
     # def delete_container(self, container_identifier: str):
     #     """
@@ -167,15 +188,16 @@ class ElucidateClient():
             "target": target
         }
         annotation.update(custom)
-        headers = jsonld_headers
+        headers = jsonld_headers.copy()
         if annotation_id:
             headers['slug'] = annotation_id
         response = requests.post(
             url=container_id.url,
             headers=headers,
             json=annotation)
-        return self.__handle_response(response, HTTPStatus.CREATED,
-                                      lambda r: AnnotationIdentifier(r.headers['location'], r.headers['etag'][3:-1]))
+        return self.__handle_response(response, {
+            HTTPStatus.CREATED: lambda r: AnnotationIdentifier(r.headers['location'], r.headers['etag'][3:-1])
+        })
 
     # TODO: Annotation Histories
     def read_annotation(self, annotation_identifier: AnnotationIdentifier):
@@ -191,8 +213,9 @@ class ElucidateClient():
             url=url,
             headers=jsonld_headers
         )
-        return self.__handle_response(response, HTTPStatus.OK,
-                                      lambda r: r.json())
+        return self.__handle_response(response, {
+            HTTPStatus.OK: lambda r: r.json()
+        })
 
     def update_annotation(self, annotation_identifier: AnnotationIdentifier, body, target, custom: dict = {}):
         """
@@ -222,9 +245,9 @@ class ElucidateClient():
             url=url,
             headers=put_headers,
             json=annotation)
-        return self.__handle_response(response, HTTPStatus.OK,
-                                      lambda r: AnnotationIdentifier(annotation_identifier.url,
-                                                                     r.headers['etag'][3:-1]))
+        return self.__handle_response(response, {
+            HTTPStatus.OK: lambda r: AnnotationIdentifier(annotation_identifier.url, r.headers['etag'][3:-1])
+        })
 
     def delete_annotation(self, annotation_identifier: AnnotationIdentifier):
         """
@@ -240,8 +263,9 @@ class ElucidateClient():
         response = requests.delete(
             url=url,
             headers=del_headers)
-        return self.__handle_response(response, HTTPStatus.NO_CONTENT,
-                                      lambda r: r.ok)
+        return self.__handle_response(response, {
+            HTTPStatus.NO_CONTENT: lambda r: r.ok
+        })
 
     def __search_by_part(self, part: str, fields: str, value: str, strict: bool = False, xywh: str = None,
                          t: str = None, creator: str = None, generator: str = None):
@@ -259,8 +283,9 @@ class ElucidateClient():
             url=url,
             params=params
         )
-        return self.__handle_response(response, HTTPStatus.OK,
-                                      lambda r: r.json())
+        return self.__handle_response(response, {
+            HTTPStatus.OK: lambda r: r.json()
+        })
 
     def search_by_body_id(self, value: str, strict: bool = False, xywh: str = None, t: str = None,
                           creator: str = None, generator: str = None):
@@ -353,8 +378,9 @@ class ElucidateClient():
             url=url,
             params=params
         )
-        return self.__handle_response(response, HTTPStatus.OK,
-                                      lambda r: r.json())
+        return self.__handle_response(response, {
+            HTTPStatus.OK: lambda r: r.json()
+        })
 
     def search_by_annotation_creator_id(self, value: str, strict: bool = False):
         """
@@ -728,8 +754,9 @@ class ElucidateClient():
             url=url,
             params=params
         )
-        return self.__handle_response(response, HTTPStatus.OK,
-                                      lambda r: r.json())
+        return self.__handle_response(response, {
+            HTTPStatus.OK: lambda r: r.json()
+        })
 
     def search_by_annotation_created_since(self, since: datetime):
         """
@@ -827,8 +854,9 @@ class ElucidateClient():
             url=url,
             headers=jsonld_headers,
             params={"field": field})
-        return self.__handle_response(response, HTTPStatus.OK,
-                                      lambda r: r.json())
+        return self.__handle_response(response, {
+            HTTPStatus.OK: lambda r: r.json()
+        })
 
     def get_body_id_statistics(self):
         """
@@ -883,8 +911,9 @@ class ElucidateClient():
             headers=jsonld_headers,
             json=json
         )
-        return self.__handle_response(response, HTTPStatus.OK,
-                                      lambda r: r.json())
+        return self.__handle_response(response, {
+            HTTPStatus.OK: lambda r: r.json()
+        })
 
     def do_batch_delete(self, body, target):
         """
@@ -907,8 +936,9 @@ class ElucidateClient():
             headers=jsonld_headers,
             json=json
         )
-        return self.__handle_response(response, HTTPStatus.OK,
-                                      lambda r: r.json())
+        return self.__handle_response(response, {
+            HTTPStatus.OK: lambda r: r.json()
+        })
 
     def read_current_user(self):
         """
@@ -920,8 +950,9 @@ class ElucidateClient():
         response = requests.get(
             url=url,
             headers=json_headers)
-        return self.__handle_response(response, HTTPStatus.OK,
-                                      lambda r: r.json())
+        return self.__handle_response(response, {
+            HTTPStatus.OK: lambda r: r.json()
+        })
 
     def create_group(self, label: str):
         """
@@ -936,8 +967,9 @@ class ElucidateClient():
             url=url,
             headers=json_headers,
             json={"label": label})
-        return self.__handle_response(response, HTTPStatus.CREATED,
-                                      lambda r: r.json()['id'])
+        return self.__handle_response(response, {
+            HTTPStatus.CREATED: lambda r: r.json()['id']
+        })
 
     def read_group(self, group_id: str):
         """
@@ -951,8 +983,9 @@ class ElucidateClient():
         response = requests.get(
             url=url,
             headers=json_headers)
-        return self.__handle_response(response, HTTPStatus.OK,
-                                      lambda r: r.json())
+        return self.__handle_response(response, {
+            HTTPStatus.OK: lambda r: r.json()
+        })
 
     def read_group_users(self, group_id: str):
         """
@@ -966,8 +999,9 @@ class ElucidateClient():
         response = requests.get(
             url=url,
             headers=json_headers)
-        return self.__handle_response(response, HTTPStatus.OK,
-                                      lambda r: r.json()['users'])
+        return self.__handle_response(response, {
+            HTTPStatus.OK: lambda r: r.json()['users']
+        })
 
     def create_group_user(self, group_id: str, user_id: str):
         """
@@ -983,8 +1017,9 @@ class ElucidateClient():
         response = requests.post(
             url=url,
             headers=json_headers)
-        return self.__handle_response(response, HTTPStatus.OK,
-                                      lambda r: r.ok)
+        return self.__handle_response(response, {
+            HTTPStatus.OK: lambda r: r.ok
+        })
 
     def delete_group_user(self, group_id: str, user_id: str):
         """
@@ -1000,8 +1035,9 @@ class ElucidateClient():
         response = requests.delete(
             url=url,
             headers=json_headers)
-        return self.__handle_response(response, HTTPStatus.OK,
-                                      lambda r: r.ok)
+        return self.__handle_response(response, {
+            HTTPStatus.OK: lambda r: r.ok
+        })
 
     def read_group_annotations(self, group_id: str):
         """
@@ -1015,8 +1051,9 @@ class ElucidateClient():
         response = requests.get(
             url=url,
             headers=json_headers)
-        return self.__handle_response(response, HTTPStatus.OK,
-                                      lambda r: r.json()['annotations'])
+        return self.__handle_response(response, {
+            HTTPStatus.OK: lambda r: r.json()['annotations']
+        })
 
     def create_group_annotation(self, group_id: str, annotation_identifier: AnnotationIdentifier):
         """
@@ -1029,10 +1066,10 @@ class ElucidateClient():
         :rtype: bool
         """
         url = f'{self.base_uri}/group/{group_id}/annotation/{annotation_identifier.container_uuid}/{annotation_identifier.uuid}'
-        expected_status = HTTPStatus.OK
         response = requests.post(url=url)
-        return self.__handle_response(response, expected_status,
-                                      lambda r: r.ok)
+        return self.__handle_response(response, {
+            HTTPStatus.OK: lambda r: r.ok
+        })
 
     def delete_group_annotation(self, group_id: str, annotation_identifier: AnnotationIdentifier):
         """
@@ -1045,24 +1082,27 @@ class ElucidateClient():
         :rtype:
         """
         url = f'{self.base_uri}/group/{group_id}/annotation/{annotation_identifier.container_uuid}/{annotation_identifier.uuid}'
-        expected_status = HTTPStatus.OK
         response = requests.delete(url=url)
-        return self.__handle_response(response, expected_status,
-                                      lambda r: r.ok)
+        return self.__handle_response(response, {
+            HTTPStatus.OK: lambda r: r.ok
+        })
 
-    def __handle_response(self, response: Response, expected_status_code: int, result_producer):
+    def __handle_response(self, response: Response, result_producers: dict):
+        status_code = response.status_code
+        status_message = http.client.responses[status_code]
         if (self.verbose):
             print(f'-> {response.request.method} {response.request.url}')
-            print(f'<- {response.status_code}')
-        if (response.status_code == expected_status_code):
-            result = result_producer(response)
+            print(f'<- {status_code} {status_message}')
+        if status_code in result_producers.keys():
+            result = result_producers[response.status_code](response)
             if (self.raise_exceptions):
                 return result
             else:
                 return ElucidateSuccess(response, result)
         else:
             if (self.raise_exceptions):
-                raise Exception(f'{response.status_code} : {response.text}')
+                raise Exception(
+                    f'{response.request.method} {response.request.url} returned {status_code} {status_message} : "{response.text}"')
             else:
                 return ElucidateFailure(response)
 
