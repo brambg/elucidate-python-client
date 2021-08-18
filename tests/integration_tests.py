@@ -592,7 +592,9 @@ class SlugTestSuite(unittest.TestCase):
         ec = ElucidateClient(BASE_URI)
         container_name = 'custom_container_name4'
 
-        container_id = ec.create_container(label='This is the label', container_id=container_name)
+        container_id = ec.read_container_identifier(name=container_name)
+        if not container_id:
+            container_id = ec.create_container(label='This is the label', container_id=container_name)
         ic(container_id)
         expected_url = f"{BASE_URI}/{ec.version}/{container_name}/"
         self.assertEqual(expected_url, container_id.url)
