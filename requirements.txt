@@ -1,3 +1,4 @@
 icecream==2.1.1
 requests==2.25.1
 uri==2.0.1
+pygments>=2.7.4 # not directly required, pinned by Snyk to avoid a vulnerability
