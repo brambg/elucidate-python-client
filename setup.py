@@ -11,7 +11,7 @@ with open('LICENSE', encoding='utf8') as f:
 
 setup(
     name='elucidate-client',
-    version='0.0.2',
+    version='0.0.3',
     description='client to access the elucidate-server',
     long_description=readme,
     author='Bram Buitendijk',
