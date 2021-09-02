@@ -5,6 +5,7 @@ from typing import Any, Union
 
 import requests
 from requests import Response
+from uri import URI
 
 jsonld_headers = {
     'Accept': 'application/ld+json; profile="http://www.w3.org/ns/anno.jsonld"',
@@ -35,6 +36,8 @@ class ElucidateFailure(ElucidateResponse):
 
 class ContainerIdentifier():
     def __init__(self, url: str):
+        if not url.endswith('/'):
+            url = f"{url}/"
         self.url = url
         self.uuid = url.split('/')[-2]
 
@@ -58,6 +61,10 @@ class AnnotationIdentifier():
 
     def __repr__(self):
         return self.__str__()
+
+    def container_identifier(self) -> ContainerIdentifier:
+        container_url = str(URI(self.url).resolve("."))
+        return ContainerIdentifier(container_url)
 
 
 class ElucidateClient():

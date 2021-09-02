@@ -1,9 +1,35 @@
 # -*- coding: utf-8 -*-
 import unittest
 
-from elucidate.client import ElucidateSuccess, ElucidateResponse, split_annotation
+import elucidate.client as ec
+from elucidate.client import ElucidateSuccess, ElucidateResponse, ContainerIdentifier, AnnotationIdentifier
 
 BASE_URI = "http://localhost:18080/annotation"
+
+
+class ContainerIdentifierTestSuite(unittest.TestCase):
+    def test_container_identifier_from_container_url_with_trailing_slash(self):
+        container_name = 'test_container1'
+        url = f"{BASE_URI}/w3c/{container_name}/"
+        container_identifier = ContainerIdentifier(url)
+        self.assertEqual(url, container_identifier.url)
+        self.assertEqual(container_name, container_identifier.uuid)
+
+    def test_container_identifier_from_container_url_without_trailing_slash(self):
+        container_name = 'test_container2'
+        url = f"{BASE_URI}/w3c/{container_name}"
+        container_identifier = ContainerIdentifier(url)
+        self.assertEqual(url + '/', container_identifier.url)
+        self.assertEqual(container_name, container_identifier.uuid)
+
+    def test_container_identifier_from_annotation_container(self):
+        container_name = 'test_container3'
+        annotation_url = f"{BASE_URI}/w3c/{container_name}/some_annotation_id"
+        container_url = f"{BASE_URI}/w3c/{container_name}/"
+        annotation_identifier = AnnotationIdentifier(url=annotation_url, etag="some_etag")
+        container_identifier = annotation_identifier.container_identifier()
+        self.assertEqual(container_url, container_identifier.url)
+        self.assertEqual(container_name, container_identifier.uuid)
 
 
 class WebAnnotationSplitterTestSuite(unittest.TestCase):
@@ -43,7 +69,7 @@ class WebAnnotationSplitterTestSuite(unittest.TestCase):
                                   'source': 'https://files.transkribus.eu/iiif/2/MOQMINPXXPUTISCRFIRKIOIX/full/max/0/default.jpg',
                                   'type': 'image'}],
                       'type': 'Annotation'}
-        (body, target, custom) = split_annotation(annotation)
+        (body, target, custom) = ec.split_annotation(annotation)
         expected_body = [{'purpose': 'classifying',
                           'type': 'TextualBody',
                           'value': 'location'},
