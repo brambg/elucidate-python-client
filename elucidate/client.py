@@ -67,6 +67,26 @@ class AnnotationIdentifier():
         return ContainerIdentifier(container_url)
 
 
+class AnnotationCollection():
+    def __init__(self, total, search_url: str, first_page: dict):
+        self.total = total
+        self.search_url = search_url
+        self.first_page = first_page
+        self.page = 0
+
+    def annotations_as_json(self):
+        annotations = self.first_page['items']
+        annotations_yielded = 0
+        while (annotations_yielded < self.total):
+            yield from annotations
+            annotations_yielded += len(annotations)
+            if (self.total > annotations_yielded):
+                self.page += 1
+                next_page_url = f"{self.search_url}&page={self.page}"
+                result = requests.get(url=next_page_url)
+                annotations = result.json()['items']
+
+
 class ElucidateClient():
     def __init__(self, base_uri: str, raise_exceptions: bool = True, verbose: bool = False):
         self.base_uri = base_uri
@@ -136,7 +156,7 @@ class ElucidateClient():
             url=url,
             headers=jsonld_headers)
         return self.__handle_response(response, {
-            HTTPStatus.OK: lambda r: r.json()
+            HTTPStatus.OK: as_json_dict
         })
 
     def read_container_identifier(self, name: str) -> Union[None, ContainerIdentifier]:
@@ -221,7 +241,7 @@ class ElucidateClient():
             headers=jsonld_headers
         )
         return self.__handle_response(response, {
-            HTTPStatus.OK: lambda r: r.json()
+            HTTPStatus.OK: as_json_dict
         })
 
     def update_annotation(self, annotation_identifier: AnnotationIdentifier, body, target, custom: dict = {}):
@@ -291,7 +311,7 @@ class ElucidateClient():
             params=params
         )
         return self.__handle_response(response, {
-            HTTPStatus.OK: lambda r: r.json()
+            HTTPStatus.OK: as_annotation_collection
         })
 
     def search_by_body_id(self, value: str, strict: bool = False, xywh: str = None, t: str = None,
@@ -386,7 +406,7 @@ class ElucidateClient():
             params=params
         )
         return self.__handle_response(response, {
-            HTTPStatus.OK: lambda r: r.json()
+            HTTPStatus.OK: as_annotation_collection
         })
 
     def search_by_annotation_creator_id(self, value: str, strict: bool = False):
@@ -762,7 +782,7 @@ class ElucidateClient():
             params=params
         )
         return self.__handle_response(response, {
-            HTTPStatus.OK: lambda r: r.json()
+            HTTPStatus.OK: as_annotation_collection
         })
 
     def search_by_annotation_created_since(self, since: datetime):
@@ -862,7 +882,7 @@ class ElucidateClient():
             headers=jsonld_headers,
             params={"field": field})
         return self.__handle_response(response, {
-            HTTPStatus.OK: lambda r: r.json()
+            HTTPStatus.OK: as_json_dict
         })
 
     def get_body_id_statistics(self):
@@ -919,7 +939,7 @@ class ElucidateClient():
             json=json
         )
         return self.__handle_response(response, {
-            HTTPStatus.OK: lambda r: r.json()
+            HTTPStatus.OK: as_json_dict
         })
 
     def do_batch_delete(self, body, target):
@@ -944,7 +964,7 @@ class ElucidateClient():
             json=json
         )
         return self.__handle_response(response, {
-            HTTPStatus.OK: lambda r: r.json()
+            HTTPStatus.OK: as_json_dict
         })
 
     def read_current_user(self):
@@ -958,7 +978,7 @@ class ElucidateClient():
             url=url,
             headers=json_headers)
         return self.__handle_response(response, {
-            HTTPStatus.OK: lambda r: r.json()
+            HTTPStatus.OK: as_json_dict
         })
 
     def create_group(self, label: str):
@@ -991,7 +1011,7 @@ class ElucidateClient():
             url=url,
             headers=json_headers)
         return self.__handle_response(response, {
-            HTTPStatus.OK: lambda r: r.json()
+            HTTPStatus.OK: as_json_dict
         })
 
     def read_group_users(self, group_id: str):
@@ -1100,25 +1120,36 @@ class ElucidateClient():
         if (self.verbose):
             print(f'-> {response.request.method} {response.request.url}')
             print(f'<- {status_code} {status_message}')
-        if status_code in result_producers.keys():
+        if status_code in result_producers:
             result = result_producers[response.status_code](response)
             if (self.raise_exceptions):
                 return result
             else:
                 return ElucidateSuccess(response, result)
+        elif self.raise_exceptions:
+            raise Exception(
+                f'{response.request.method} {response.request.url} returned {status_code} {status_message} : "{response.text}"')
         else:
-            if (self.raise_exceptions):
-                raise Exception(
-                    f'{response.request.method} {response.request.url} returned {status_code} {status_message} : "{response.text}"')
-            else:
-                return ElucidateFailure(response)
+            return ElucidateFailure(response)
 
 
 def split_annotation(annotation: dict):
     body = annotation['body']
     target = annotation['target']
-    custom = {}
-    custom_keys = [key for key in annotation.keys() if key not in ['body', 'target', '@context', 'id', 'type']]
-    for k in custom_keys:
-        custom[k] = annotation[k]
+    custom_keys = [
+        key
+        for key in annotation
+        if key not in ['body', 'target', '@context', 'id', 'type']
+    ]
+
+    custom = {k: annotation[k] for k in custom_keys}
     return (body, target, custom)
+
+
+def as_annotation_collection(response: Response) -> AnnotationCollection:
+    json = response.json()
+    return AnnotationCollection(json['total'], json['id'], json['first'])
+
+
+def as_json_dict(response: Response) -> dict:
+    return response.json()
