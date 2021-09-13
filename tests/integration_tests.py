@@ -5,10 +5,13 @@ import urllib.parse
 
 from icecream import ic
 
-from elucidate.client import ElucidateClient, ElucidateSuccess, ElucidateResponse, ContainerIdentifier, \
-    AnnotationIdentifier
+import model
+from elucidate.client import ElucidateClient
+from elucidate.model import ElucidateSuccess, ElucidateResponse, ContainerIdentifier, AnnotationIdentifier, \
+    AnnotationCollection
 
-BASE_URI = "http://localhost:18080/annotation"
+# BASE_URI = "http://localhost:18080/annotation"
+BASE_URI = "https://elucidate.tt.di.huc.knaw.nl/annotation"
 
 
 class ElucidateClientTestSuite(unittest.TestCase):
@@ -17,7 +20,7 @@ class ElucidateClientTestSuite(unittest.TestCase):
     def test_elucidate_client(self):
         ec = ElucidateClient(BASE_URI)
         container_id = ec.create_container(label='Annotation Container')
-        assert container_id != None
+        assert container_id is not None
         ic(container_id)
 
         body = {
@@ -27,7 +30,7 @@ class ElucidateClientTestSuite(unittest.TestCase):
         target = "http://www.example.com/index.html"
         annotation_id = ec.create_annotation(container_id=container_id, body=body, target=target,
                                              custom={"motivation": "tagging"})
-        assert annotation_id != None
+        assert annotation_id is not None
         ic(annotation_id)
 
         annotation = ec.read_annotation(annotation_id)
@@ -50,18 +53,18 @@ class ElucidateClientTestSuite(unittest.TestCase):
         except Exception as e:
             ic(e)
 
-        w3c_container = ec.read_container(container_id)
-        assert w3c_container != None
-        ic(w3c_container)
-        ic(w3c_container['id'])
-        assert '/w3c/' in w3c_container['id']
-
+        self._assert_read_container(ec, container_id, '/w3c/')
         ec.use_oa()
-        oa_container = ec.read_container(container_id)
-        assert oa_container != None
-        ic(oa_container)
-        ic(oa_container['id'])
-        assert '/oa/' in oa_container['id']
+        self._assert_read_container(ec, container_id, '/oa/')
+
+    def _assert_read_container(self, ec, container_id, mode):
+        w3c_container = ec.read_container(container_id)
+        ic(w3c_container.label)
+        ic(w3c_container.id)
+        ic(w3c_container.total)
+        assert mode in w3c_container.id
+        for annotation in w3c_container.annotations_as_json():
+            assert annotation['id'].starts_with(container_id.url)
 
     def test_fail(self):
         ec = ElucidateClient(BASE_URI)
@@ -79,19 +82,19 @@ class StatisticsTestSuite(unittest.TestCase):
     def test_statistics(self):
         ec = ElucidateClient(BASE_URI)
         stats = ec.get_body_id_statistics()
-        assert stats['items'] != None
+        assert stats['items'] is not None
         ic(stats['items'])
 
         stats = ec.get_body_source_statistics()
-        assert stats['items'] != None
+        assert stats['items'] is not None
         ic(stats['items'])
 
         stats = ec.get_target_id_statistics()
-        assert stats['items'] != None
+        assert stats['items'] is not None
         ic(stats['items'])
 
         stats = ec.get_target_source_statistics()
-        assert stats['items'] != None
+        assert stats['items'] is not None
         ic(stats['items'])
 
 
@@ -99,48 +102,48 @@ class SearchTestSuite(unittest.TestCase):
 
     def test_search_by_body_id(self):
         ec = ElucidateClient(BASE_URI)
-        results = ec.search_by_body_id('http://example.org')
-        # ic(results)
-        assert results != None
+        annotation_collection = ec.search_by_body_id('http://example.org')
+        ic(annotation_collection)
+        ic(annotation_collection.total)
+        for annotation in annotation_collection.annotations_as_json():
+            assert 'id' in annotation
 
     def test_search_by_body_source(self):
         ec = ElucidateClient(BASE_URI)
-        results = ec.search_by_body_source('http://example.org')
-        # ic(results)
-        assert results != None
+        annotation_collection = ec.search_by_body_source('http://example.org')
+        ic(annotation_collection)
+        ic(annotation_collection.total)
 
     def test_search_by_target_id(self):
         ec = ElucidateClient(BASE_URI)
-        results = ec.search_by_target_id('http://example.org')
-        # ic(results)
-        assert results != None
+        annotation_collection = ec.search_by_target_id('http://example.org')
+        ic(annotation_collection)
+        ic(annotation_collection.total)
 
     def test_search_by_target_source(self):
         ec = ElucidateClient(BASE_URI)
-        results = ec.search_by_target_source('http://example.org')
-        # ic(results)
-        assert results != None
+        annotation_collection = ec.search_by_target_source('http://example.org')
+        ic(annotation_collection)
+        ic(annotation_collection.total)
 
-    def assert_search_by_part_results(self, results,
+    def assert_search_by_part_results(self, annotation_collection: AnnotationCollection,
                                       expected_levels: str, expected_part: str, expected_type: str,
                                       value: str):
         # ic(results)
-        assert results != None
 
-        id = results['id']
+        id = annotation_collection.id
         assert f'/search/{expected_part}?' in id
         assert f'levels={expected_levels}' in id
         assert f'type={expected_type}' in id
         encoded_value = urllib.parse.quote(value, safe='')
         assert f'value={encoded_value}' in id
-        ic(results['total'])
+        for a in annotation_collection.annotations_as_json():
+            assert 'id' in a
 
     def test_search_by_annotation_creator_id(self):
         value = 'http://example.org'
         ec = ElucidateClient(BASE_URI)
-        results = ec.search_by_annotation_creator_id(value)
-        # ic(results)
-        self.assert_search_by_part_results(results=results,
+        self.assert_search_by_part_results(annotation_collection=ec.search_by_annotation_creator_id(value),
                                            expected_levels='annotation',
                                            expected_part='creator',
                                            expected_type='id',
@@ -149,8 +152,7 @@ class SearchTestSuite(unittest.TestCase):
     def test_search_by_annotation_creator_name(self):
         value = 'http://example.org'
         ec = ElucidateClient(BASE_URI)
-        results = ec.search_by_annotation_creator_name(value)
-        self.assert_search_by_part_results(results=results,
+        self.assert_search_by_part_results(annotation_collection=(ec.search_by_annotation_creator_name(value)),
                                            expected_levels='annotation',
                                            expected_part='creator',
                                            expected_type='name',
@@ -159,8 +161,7 @@ class SearchTestSuite(unittest.TestCase):
     def test_search_by_annotation_creator_nickname(self):
         value = 'http://example.org'
         ec = ElucidateClient(BASE_URI)
-        results = ec.search_by_annotation_creator_nickname(value)
-        self.assert_search_by_part_results(results=results,
+        self.assert_search_by_part_results(annotation_collection=(ec.search_by_annotation_creator_nickname(value)),
                                            expected_levels='annotation',
                                            expected_part='creator',
                                            expected_type='nickname',
@@ -169,9 +170,7 @@ class SearchTestSuite(unittest.TestCase):
     def test_search_by_annotation_creator_email(self):
         value = 'someone@example.com'
         ec = ElucidateClient(BASE_URI)
-        results = ec.search_by_annotation_creator_email(value)
-
-        self.assert_search_by_part_results(results=results,
+        self.assert_search_by_part_results(annotation_collection=(ec.search_by_annotation_creator_email(value)),
                                            expected_levels='annotation',
                                            expected_part='creator',
                                            expected_type='email',
@@ -180,8 +179,7 @@ class SearchTestSuite(unittest.TestCase):
     def test_search_by_annotation_creator_emailsha1(self):
         value = 'xyz'
         ec = ElucidateClient(BASE_URI)
-        results = ec.search_by_annotation_creator_emailsha1(value)
-        self.assert_search_by_part_results(results=results,
+        self.assert_search_by_part_results(annotation_collection=(ec.search_by_annotation_creator_emailsha1(value)),
                                            expected_levels='annotation',
                                            expected_part='creator',
                                            expected_type='emailsha1',
@@ -190,8 +188,7 @@ class SearchTestSuite(unittest.TestCase):
     def test_search_by_annotation_generator_id(self):
         value = 'http://example.org'
         ec = ElucidateClient(BASE_URI)
-        results = ec.search_by_annotation_generator_id(value)
-        self.assert_search_by_part_results(results=results,
+        self.assert_search_by_part_results(annotation_collection=(ec.search_by_annotation_generator_id(value)),
                                            expected_levels='annotation',
                                            expected_part='generator',
                                            expected_type='id',
@@ -200,8 +197,7 @@ class SearchTestSuite(unittest.TestCase):
     def test_search_by_annotation_generator_name(self):
         value = 'http://example.org'
         ec = ElucidateClient(BASE_URI)
-        results = ec.search_by_annotation_generator_name(value)
-        self.assert_search_by_part_results(results=results,
+        self.assert_search_by_part_results(annotation_collection=(ec.search_by_annotation_generator_name(value)),
                                            expected_levels='annotation',
                                            expected_part='generator',
                                            expected_type='name',
@@ -210,8 +206,7 @@ class SearchTestSuite(unittest.TestCase):
     def test_search_by_annotation_generator_nickname(self):
         value = 'http://example.org'
         ec = ElucidateClient(BASE_URI)
-        results = ec.search_by_annotation_generator_nickname(value)
-        self.assert_search_by_part_results(results=results,
+        self.assert_search_by_part_results(annotation_collection=(ec.search_by_annotation_generator_nickname(value)),
                                            expected_levels='annotation',
                                            expected_part='generator',
                                            expected_type='nickname',
@@ -220,8 +215,7 @@ class SearchTestSuite(unittest.TestCase):
     def test_search_by_annotation_generator_email(self):
         value = 'someone@example.com'
         ec = ElucidateClient(BASE_URI)
-        results = ec.search_by_annotation_generator_email(value)
-        self.assert_search_by_part_results(results=results,
+        self.assert_search_by_part_results(annotation_collection=(ec.search_by_annotation_generator_email(value)),
                                            expected_levels='annotation',
                                            expected_part='generator',
                                            expected_type='email',
@@ -230,8 +224,7 @@ class SearchTestSuite(unittest.TestCase):
     def test_search_by_annotation_generator_emailsha1(self):
         value = 'xyz'
         ec = ElucidateClient(BASE_URI)
-        results = ec.search_by_annotation_generator_emailsha1(value)
-        self.assert_search_by_part_results(results=results,
+        self.assert_search_by_part_results(annotation_collection=(ec.search_by_annotation_generator_emailsha1(value)),
                                            expected_levels='annotation',
                                            expected_part='generator',
                                            expected_type='emailsha1',
@@ -240,8 +233,7 @@ class SearchTestSuite(unittest.TestCase):
     def test_search_by_body_creator_id(self):
         value = 'http://example.org'
         ec = ElucidateClient(BASE_URI)
-        results = ec.search_by_body_creator_id(value)
-        self.assert_search_by_part_results(results=results,
+        self.assert_search_by_part_results(annotation_collection=(ec.search_by_body_creator_id(value)),
                                            expected_levels='body',
                                            expected_part='creator',
                                            expected_type='id',
@@ -250,8 +242,7 @@ class SearchTestSuite(unittest.TestCase):
     def test_search_by_body_creator_name(self):
         value = 'http://example.org'
         ec = ElucidateClient(BASE_URI)
-        results = ec.search_by_body_creator_name(value)
-        self.assert_search_by_part_results(results=results,
+        self.assert_search_by_part_results(annotation_collection=(ec.search_by_body_creator_name(value)),
                                            expected_levels='body',
                                            expected_part='creator',
                                            expected_type='name',
@@ -260,8 +251,7 @@ class SearchTestSuite(unittest.TestCase):
     def test_search_by_body_creator_nickname(self):
         value = 'http://example.org'
         ec = ElucidateClient(BASE_URI)
-        results = ec.search_by_body_creator_nickname(value)
-        self.assert_search_by_part_results(results=results,
+        self.assert_search_by_part_results(annotation_collection=(ec.search_by_body_creator_nickname(value)),
                                            expected_levels='body',
                                            expected_part='creator',
                                            expected_type='nickname',
@@ -270,8 +260,7 @@ class SearchTestSuite(unittest.TestCase):
     def test_search_by_body_creator_email(self):
         value = 'someone@example.com'
         ec = ElucidateClient(BASE_URI)
-        results = ec.search_by_body_creator_email(value)
-        self.assert_search_by_part_results(results=results,
+        self.assert_search_by_part_results(annotation_collection=(ec.search_by_body_creator_email(value)),
                                            expected_levels='body',
                                            expected_part='creator',
                                            expected_type='email',
@@ -280,8 +269,7 @@ class SearchTestSuite(unittest.TestCase):
     def test_search_by_body_creator_emailsha1(self):
         value = 'xyz'
         ec = ElucidateClient(BASE_URI)
-        results = ec.search_by_body_creator_emailsha1(value)
-        self.assert_search_by_part_results(results=results,
+        self.assert_search_by_part_results(annotation_collection=(ec.search_by_body_creator_emailsha1(value)),
                                            expected_levels='body',
                                            expected_part='creator',
                                            expected_type='emailsha1',
@@ -290,8 +278,7 @@ class SearchTestSuite(unittest.TestCase):
     def test_search_by_body_generator_id(self):
         value = 'http://example.org'
         ec = ElucidateClient(BASE_URI)
-        results = ec.search_by_body_generator_id(value)
-        self.assert_search_by_part_results(results=results,
+        self.assert_search_by_part_results(annotation_collection=(ec.search_by_body_generator_id(value)),
                                            expected_levels='body',
                                            expected_part='generator',
                                            expected_type='id',
@@ -300,8 +287,7 @@ class SearchTestSuite(unittest.TestCase):
     def test_search_by_body_generator_name(self):
         value = 'http://example.org'
         ec = ElucidateClient(BASE_URI)
-        results = ec.search_by_body_generator_name(value)
-        self.assert_search_by_part_results(results=results,
+        self.assert_search_by_part_results(annotation_collection=(ec.search_by_body_generator_name(value)),
                                            expected_levels='body',
                                            expected_part='generator',
                                            expected_type='name',
@@ -310,8 +296,7 @@ class SearchTestSuite(unittest.TestCase):
     def test_search_by_body_generator_nickname(self):
         value = 'http://example.org'
         ec = ElucidateClient(BASE_URI)
-        results = ec.search_by_body_generator_nickname(value)
-        self.assert_search_by_part_results(results=results,
+        self.assert_search_by_part_results(annotation_collection=(ec.search_by_body_generator_nickname(value)),
                                            expected_levels='body',
                                            expected_part='generator',
                                            expected_type='nickname',
@@ -320,8 +305,7 @@ class SearchTestSuite(unittest.TestCase):
     def test_search_by_body_generator_email(self):
         value = 'someone@example.com'
         ec = ElucidateClient(BASE_URI)
-        results = ec.search_by_body_generator_email(value)
-        self.assert_search_by_part_results(results=results,
+        self.assert_search_by_part_results(annotation_collection=(ec.search_by_body_generator_email(value)),
                                            expected_levels='body',
                                            expected_part='generator',
                                            expected_type='email',
@@ -330,8 +314,7 @@ class SearchTestSuite(unittest.TestCase):
     def test_search_by_body_generator_emailsha1(self):
         value = 'xyz'
         ec = ElucidateClient(BASE_URI)
-        results = ec.search_by_body_generator_emailsha1(value)
-        self.assert_search_by_part_results(results=results,
+        self.assert_search_by_part_results(annotation_collection=(ec.search_by_body_generator_emailsha1(value)),
                                            expected_levels='body',
                                            expected_part='generator',
                                            expected_type='emailsha1',
@@ -340,8 +323,7 @@ class SearchTestSuite(unittest.TestCase):
     def test_search_by_target_creator_id(self):
         value = 'http://example.org'
         ec = ElucidateClient(BASE_URI)
-        results = ec.search_by_target_creator_id(value)
-        self.assert_search_by_part_results(results=results,
+        self.assert_search_by_part_results(annotation_collection=(ec.search_by_target_creator_id(value)),
                                            expected_levels='target',
                                            expected_part='creator',
                                            expected_type='id',
@@ -350,8 +332,7 @@ class SearchTestSuite(unittest.TestCase):
     def test_search_by_target_creator_name(self):
         value = 'http://example.org'
         ec = ElucidateClient(BASE_URI)
-        results = ec.search_by_target_creator_name(value)
-        self.assert_search_by_part_results(results=results,
+        self.assert_search_by_part_results(annotation_collection=(ec.search_by_target_creator_name(value)),
                                            expected_levels='target',
                                            expected_part='creator',
                                            expected_type='name',
@@ -360,8 +341,7 @@ class SearchTestSuite(unittest.TestCase):
     def test_search_by_target_creator_nickname(self):
         value = 'http://example.org'
         ec = ElucidateClient(BASE_URI)
-        results = ec.search_by_target_creator_nickname(value)
-        self.assert_search_by_part_results(results=results,
+        self.assert_search_by_part_results(annotation_collection=(ec.search_by_target_creator_nickname(value)),
                                            expected_levels='target',
                                            expected_part='creator',
                                            expected_type='nickname',
@@ -370,8 +350,7 @@ class SearchTestSuite(unittest.TestCase):
     def test_search_by_target_creator_email(self):
         value = 'someone@example.com'
         ec = ElucidateClient(BASE_URI)
-        results = ec.search_by_target_creator_email(value)
-        self.assert_search_by_part_results(results=results,
+        self.assert_search_by_part_results(annotation_collection=(ec.search_by_target_creator_email(value)),
                                            expected_levels='target',
                                            expected_part='creator',
                                            expected_type='email',
@@ -381,7 +360,7 @@ class SearchTestSuite(unittest.TestCase):
         value = 'xyz'
         ec = ElucidateClient(BASE_URI)
         results = ec.search_by_target_creator_emailsha1(value)
-        self.assert_search_by_part_results(results=results,
+        self.assert_search_by_part_results(annotation_collection=results,
                                            expected_levels='target',
                                            expected_part='creator',
                                            expected_type='emailsha1',
@@ -390,8 +369,7 @@ class SearchTestSuite(unittest.TestCase):
     def test_search_by_target_generator_id(self):
         value = 'http://example.org'
         ec = ElucidateClient(BASE_URI)
-        results = ec.search_by_target_generator_id(value)
-        self.assert_search_by_part_results(results=results,
+        self.assert_search_by_part_results(annotation_collection=(ec.search_by_target_generator_id(value)),
                                            expected_levels='target',
                                            expected_part='generator',
                                            expected_type='id',
@@ -400,8 +378,7 @@ class SearchTestSuite(unittest.TestCase):
     def test_search_by_target_generator_name(self):
         value = 'http://example.org'
         ec = ElucidateClient(BASE_URI)
-        results = ec.search_by_target_generator_name(value)
-        self.assert_search_by_part_results(results=results,
+        self.assert_search_by_part_results(annotation_collection=(ec.search_by_target_generator_name(value)),
                                            expected_levels='target',
                                            expected_part='generator',
                                            expected_type='name',
@@ -410,8 +387,7 @@ class SearchTestSuite(unittest.TestCase):
     def test_search_by_target_generator_nickname(self):
         value = 'http://example.org'
         ec = ElucidateClient(BASE_URI)
-        results = ec.search_by_target_generator_nickname(value)
-        self.assert_search_by_part_results(results=results,
+        self.assert_search_by_part_results(annotation_collection=(ec.search_by_target_generator_nickname(value)),
                                            expected_levels='target',
                                            expected_part='generator',
                                            expected_type='nickname',
@@ -420,8 +396,7 @@ class SearchTestSuite(unittest.TestCase):
     def test_search_by_target_generator_email(self):
         value = 'someone@example.com'
         ec = ElucidateClient(BASE_URI)
-        results = ec.search_by_target_generator_email(value)
-        self.assert_search_by_part_results(results=results,
+        self.assert_search_by_part_results(annotation_collection=(ec.search_by_target_generator_email(value)),
                                            expected_levels='target',
                                            expected_part='generator',
                                            expected_type='email',
@@ -430,8 +405,7 @@ class SearchTestSuite(unittest.TestCase):
     def test_search_by_target_generator_emailsha1(self):
         value = 'xyz'
         ec = ElucidateClient(BASE_URI)
-        results = ec.search_by_target_generator_emailsha1(value)
-        self.assert_search_by_part_results(results=results,
+        self.assert_search_by_part_results(annotation_collection=(ec.search_by_target_generator_emailsha1(value)),
                                            expected_levels='target',
                                            expected_part='generator',
                                            expected_type='emailsha1',
@@ -440,43 +414,45 @@ class SearchTestSuite(unittest.TestCase):
 
 class TemporalSearchTestSuite(unittest.TestCase):
 
-    def assert_search_by_temporal_results(self, results,
+    def assert_search_by_temporal_results(self, annotation_collection: AnnotationCollection,
                                           expected_levels: str, expected_types: str, since: datetime):
         # ic(results)
-        assert results != None
+        assert annotation_collection is not None
 
-        id = results['id']
+        id = annotation_collection.id
         assert f'/search/temporal?' in id
         assert f'levels={expected_levels}' in id
         assert f'types={expected_types}' in id
         expected_since = since.isoformat() + '.000Z'
         assert f'since={expected_since}' in id
-        ic(results['total'])
+        ic(annotation_collection.total)
 
     def test_search_by_annotation_created_since(self):
         since = datetime.datetime(year=2000, month=1, day=1)
         ec = ElucidateClient(BASE_URI, raise_exceptions=False)
-        result = ec.search_by_annotation_created_since(since)
-        results = result.result
-        self.assert_search_by_temporal_results(results=results,
+        response = ec.search_by_annotation_created_since(since)
+        annotation_collection = get_result(response)
+        self.assert_search_by_temporal_results(annotation_collection=annotation_collection,
                                                expected_levels='annotation',
                                                expected_types='created',
                                                since=since)
 
     def test_search_by_annotation_modified_since(self):
         since = datetime.datetime(year=2000, month=1, day=1, microsecond=314)
-        ec = ElucidateClient(BASE_URI)
-        results = ec.search_by_annotation_modified_since(since)
-        self.assert_search_by_temporal_results(results=results,
+        ec = ElucidateClient(BASE_URI, raise_exceptions=False)
+        response = (ec.search_by_annotation_modified_since(since))
+        annotation_collection = get_result(response)
+        self.assert_search_by_temporal_results(annotation_collection=annotation_collection,
                                                expected_levels='annotation',
                                                expected_types='modified',
                                                since=since)
 
     def test_search_by_annotation_generated_since(self):
         since = datetime.datetime(year=2000, month=1, day=1)
-        ec = ElucidateClient(BASE_URI)
-        results = ec.search_by_annotation_generated_since(since)
-        self.assert_search_by_temporal_results(results=results,
+        ec = ElucidateClient(BASE_URI, raise_exceptions=False)
+        response = (ec.search_by_annotation_generated_since(since))
+        annotation_collection = get_result(response)
+        self.assert_search_by_temporal_results(annotation_collection=annotation_collection,
                                                expected_levels='annotation',
                                                expected_types='generated',
                                                since=since)
@@ -484,27 +460,29 @@ class TemporalSearchTestSuite(unittest.TestCase):
     def test_search_by_body_created_since(self):
         since = datetime.datetime(year=2000, month=1, day=1)
         ec = ElucidateClient(BASE_URI, raise_exceptions=False)
-        result = ec.search_by_body_created_since(since)
-        results = result.result
-        self.assert_search_by_temporal_results(results=results,
+        response = (ec.search_by_body_created_since(since))
+        annotation_collection = get_result(response)
+        self.assert_search_by_temporal_results(annotation_collection=annotation_collection,
                                                expected_levels='body',
                                                expected_types='created',
                                                since=since)
 
     def test_search_by_body_modified_since(self):
         since = datetime.datetime(year=2000, month=1, day=1, microsecond=314)
-        ec = ElucidateClient(BASE_URI)
-        results = ec.search_by_body_modified_since(since)
-        self.assert_search_by_temporal_results(results=results,
+        ec = ElucidateClient(BASE_URI, raise_exceptions=False)
+        response = (ec.search_by_body_modified_since(since))
+        annotation_collection = get_result(response)
+        self.assert_search_by_temporal_results(annotation_collection=annotation_collection,
                                                expected_levels='body',
                                                expected_types='modified',
                                                since=since)
 
     def test_search_by_body_generated_since(self):
         since = datetime.datetime(year=2000, month=1, day=1)
-        ec = ElucidateClient(BASE_URI)
-        results = ec.search_by_body_generated_since(since)
-        self.assert_search_by_temporal_results(results=results,
+        ec = ElucidateClient(BASE_URI, raise_exceptions=False)
+        response = (ec.search_by_body_generated_since(since))
+        annotation_collection = get_result(response)
+        self.assert_search_by_temporal_results(annotation_collection=annotation_collection,
                                                expected_levels='body',
                                                expected_types='generated',
                                                since=since)
@@ -512,27 +490,29 @@ class TemporalSearchTestSuite(unittest.TestCase):
     def test_search_by_target_created_since(self):
         since = datetime.datetime(year=2000, month=1, day=1)
         ec = ElucidateClient(BASE_URI, raise_exceptions=False)
-        result = ec.search_by_target_created_since(since)
-        results = result.result
-        self.assert_search_by_temporal_results(results=results,
+        response = (ec.search_by_target_created_since(since))
+        annotation_collection = get_result(response)
+        self.assert_search_by_temporal_results(annotation_collection=annotation_collection,
                                                expected_levels='target',
                                                expected_types='created',
                                                since=since)
 
     def test_search_by_target_modified_since(self):
         since = datetime.datetime(year=2000, month=1, day=1, microsecond=314)
-        ec = ElucidateClient(BASE_URI)
-        results = ec.search_by_target_modified_since(since)
-        self.assert_search_by_temporal_results(results=results,
+        ec = ElucidateClient(BASE_URI, raise_exceptions=False)
+        response = (ec.search_by_target_modified_since(since))
+        annotation_collection = get_result(response)
+        self.assert_search_by_temporal_results(annotation_collection=annotation_collection,
                                                expected_levels='target',
                                                expected_types='modified',
                                                since=since)
 
     def test_search_by_target_generated_since(self):
         since = datetime.datetime(year=2000, month=1, day=1)
-        ec = ElucidateClient(BASE_URI)
-        results = ec.search_by_target_generated_since(since)
-        self.assert_search_by_temporal_results(results=results,
+        ec = ElucidateClient(BASE_URI, raise_exceptions=False)
+        response = (ec.search_by_target_generated_since(since))
+        annotation_collection = get_result(response)
+        self.assert_search_by_temporal_results(annotation_collection=annotation_collection,
                                                expected_levels='target',
                                                expected_types='generated',
                                                since=since)
@@ -551,7 +531,7 @@ class AuthorizationTestSuite(unittest.TestCase):
         group_id = ec.create_group("test_group")
         ic(group_id)
         assert isinstance(group_id, str)
-        assert group_id != None
+        assert group_id is not None
 
     def test_annotation_group(self):
         ec = ElucidateClient(BASE_URI)
@@ -559,31 +539,31 @@ class AuthorizationTestSuite(unittest.TestCase):
         group_id = ec.create_group("test_group")
         ic(group_id)
         assert isinstance(group_id, str)
-        assert group_id != None
+        assert group_id is not None
 
         annotation_url = f'{BASE_URI}/group_id/annotation_id'
 
-        group_annotations = ec.read_group_annotations(group_id)
-        ic(group_annotations)
-        assert isinstance(group_annotations, list)
+        group_annotations = self._extracted_from_test_annotation_group_11(ec, group_id)
         assert annotation_url not in group_annotations
 
-        annotation_id = AnnotationIdentifier(annotation_url)
+        annotation_id = AnnotationIdentifier(annotation_url, "")
         success = ec.create_group_annotation(group_id=group_id, annotation_identifier=annotation_id)
         assert success == True
 
-        group_annotations = ec.read_group_annotations(group_id)
-        ic(group_annotations)
-        assert isinstance(group_annotations, list)
+        group_annotations = self._extracted_from_test_annotation_group_11(ec, group_id)
         assert annotation_url in group_annotations
 
         success = ec.delete_group_annotation(group_id=group_id, annotation_identifier=annotation_id)
         assert success == True
 
-        group_annotations = ec.read_group_annotations(group_id)
-        ic(group_annotations)
-        assert isinstance(group_annotations, list)
+        group_annotations = self._extracted_from_test_annotation_group_11(ec, group_id)
         assert annotation_url not in group_annotations
+
+    def _extracted_from_test_annotation_group_11(self, ec, group_id):
+        result = ec.read_group_annotations(group_id)
+        ic(result)
+        assert isinstance(result, list)
+        return result
 
 
 class SlugTestSuite(unittest.TestCase):
@@ -614,7 +594,10 @@ class SlugTestSuite(unittest.TestCase):
 
 
 def get_result(response: ElucidateResponse):
-    assert isinstance(response, ElucidateSuccess)
+    if isinstance(response, model.ElucidateFailure):
+        print("error:")
+        print(response.response.text)
+    assert isinstance(response, model.ElucidateSuccess)
     return response.result
 
 

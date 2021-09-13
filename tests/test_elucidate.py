@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 import unittest
 
-import elucidate.client as ec
-from elucidate.client import ElucidateSuccess, ElucidateResponse, ContainerIdentifier, AnnotationIdentifier
+import elucidate.tools as et
+from elucidate.model import ElucidateSuccess, ElucidateResponse, ContainerIdentifier, AnnotationIdentifier
 
 BASE_URI = "http://localhost:18080/annotation"
 
@@ -69,7 +69,7 @@ class WebAnnotationSplitterTestSuite(unittest.TestCase):
                                   'source': 'https://files.transkribus.eu/iiif/2/MOQMINPXXPUTISCRFIRKIOIX/full/max/0/default.jpg',
                                   'type': 'image'}],
                       'type': 'Annotation'}
-        (body, target, custom) = ec.split_annotation(annotation)
+        (body, target, custom) = et.split_annotation(annotation)
         expected_body = [{'purpose': 'classifying',
                           'type': 'TextualBody',
                           'value': 'location'},
