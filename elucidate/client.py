@@ -6,8 +6,8 @@ from typing import Union
 import requests
 from requests import Response
 
-from model import AnnotationCollection, ElucidateFailure, ElucidateSuccess, AnnotationIdentifier, ContainerIdentifier, \
-    ElucidateResponse
+from elucidate.model import AnnotationCollection, ElucidateFailure, ElucidateSuccess, AnnotationIdentifier, \
+    ContainerIdentifier, ElucidateResponse
 
 jsonld_headers = {
     'Accept': 'application/ld+json; profile="http://www.w3.org/ns/anno.jsonld"',
@@ -82,7 +82,7 @@ class ElucidateClient:
 
         :param container_identifier:
         :type container_identifier: ContainerIdentifier
-        :return: The Container as json-ld
+        :return: The AnnotationCollection
         :rtype: dict
         """
         url = f'{self.base_uri}/{self.version}/{container_identifier.uuid}/'

@@ -63,6 +63,9 @@ class AnnotationCollection:
         self.page = 0
         self.url_extend_character = self._url_extend_character()
 
+    def reset(self):
+        self.page = 0
+
     def annotations_as_json(self):
         if 'items' not in self.first_page:
             raise StopIteration
@@ -75,7 +78,11 @@ class AnnotationCollection:
                 self.page += 1
                 next_page_url = f"{self.id}{self.url_extend_character}page={self.page}"
                 result = requests.get(url=next_page_url)
-                annotations = result.json()['items']
+                json = result.json()
+                if 'items' in json:
+                    annotations = result.json()['items']
+                else:
+                    raise StopIteration
 
     def _url_extend_character(self):
         if '?' in self.id:
