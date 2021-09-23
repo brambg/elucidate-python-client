@@ -129,7 +129,7 @@ class ElucidateClient:
                           annotation_id: str = None):
         """
         Create an annotation in the container with the given ContainerIdentifier
-        You must provide at least a body and a target, and optionally provide additional elements in custom
+        You must provide at least a body and a target, and optionally provide additional (root) elements in custom
 
         :param annotation_id:
         :type annotation_id:
