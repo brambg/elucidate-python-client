@@ -10,7 +10,7 @@ with open('LICENSE', encoding='utf8') as f:
 
 setup(
     name='elucidate-client',
-    version='0.0.4',
+    version='0.0.5',
     description='client to access the elucidate-server',
     long_description=readme,
     author='Bram Buitendijk',
