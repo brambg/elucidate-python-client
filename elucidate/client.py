@@ -9,9 +9,11 @@ from requests import Response
 from elucidate.model import AnnotationCollection, ElucidateFailure, ElucidateSuccess, AnnotationIdentifier, \
     ContainerIdentifier, ElucidateResponse
 
+default_anno_context = "http://www.w3.org/ns/anno.jsonld"
+
 jsonld_headers = {
-    'Accept': 'application/ld+json; profile="http://www.w3.org/ns/anno.jsonld"',
-    'Content-Type': 'application/ld+json; profile="http://www.w3.org/ns/anno.jsonld"'
+    'Accept': f'application/ld+json; profile="{default_anno_context}"',
+    'Content-Type': f'application/ld+json; profile="{default_anno_context}"'
 }
 
 json_headers = {
@@ -55,7 +57,7 @@ class ElucidateClient:
         url = f'{self.base_uri}/w3c/'
         body = {
             "@context": [
-                "http://www.w3.org/ns/anno.jsonld",
+                default_anno_context,
                 "http://www.w3.org/ns/ldp.jsonld"
             ],
             "type": [
@@ -125,7 +127,7 @@ class ElucidateClient:
     #     return self.__handle_response(response, HTTPStatus.NO_CONTENT,
     #                                   lambda r: True)
 
-    def create_annotation(self, container_id: ContainerIdentifier, body, target, custom=None,
+    def create_annotation(self, container_id: ContainerIdentifier, body, target, custom=None, custom_contexts=None,
                           annotation_id: str = None):
         """
         Create an annotation in the container with the given ContainerIdentifier
@@ -146,8 +148,14 @@ class ElucidateClient:
         """
         if custom is None:
             custom = {}
+        context = default_anno_context
+        if custom_contexts:
+            if isinstance(custom_contexts, (str, dict)):
+                context = [default_anno_context, custom_contexts]
+            elif isinstance(custom_contexts, list):
+                context = [default_anno_context].extend(custom_contexts)
         annotation = {
-            "@context": "http://www.w3.org/ns/anno.jsonld",
+            "@context": context,
             "type": "Annotation",
             "body": body,
             "target": target
@@ -160,6 +168,7 @@ class ElucidateClient:
             url=container_id.url,
             headers=headers,
             json=annotation)
+
         return self.__handle_response(response, {
             HTTPStatus.CREATED: lambda r: AnnotationIdentifier(r.headers['location'], r.headers['etag'][3:-1])
         })
@@ -182,7 +191,8 @@ class ElucidateClient:
             HTTPStatus.OK: as_json_dict
         })
 
-    def update_annotation(self, annotation_identifier: AnnotationIdentifier, body, target, custom=None):
+    def update_annotation(self, annotation_identifier: AnnotationIdentifier, body, target, custom=None,
+                          custom_contexts=None):
         """
 
         :param annotation_identifier:
@@ -200,7 +210,7 @@ class ElucidateClient:
             custom = {}
         url = f'{self.base_uri}/{self.version}/{annotation_identifier.container_uuid}/{annotation_identifier.uuid}'
         annotation = {
-            "@context": "http://www.w3.org/ns/anno.jsonld",
+            "@context": default_anno_context,
             "type": "Annotation",
             "body": body,
             "target": target
@@ -255,7 +265,8 @@ class ElucidateClient:
         })
 
     def search_by_body_id(self, value: str, strict: bool = False, xywh: str = None, t: str = None,
-                          creator: str = None, generator: str = None) -> Union[AnnotationCollection, ElucidateResponse]:
+                          creator: str = None, generator: str = None) -> Union[
+        AnnotationCollection, ElucidateResponse]:
         """
 
         :param value:
@@ -390,7 +401,8 @@ class ElucidateClient:
         :return:
         :rtype:
         """
-        return self.__search_by_role(role='creator', levels='annotation', type='nickname', value=value, strict=strict)
+        return self.__search_by_role(role='creator', levels='annotation', type='nickname', value=value,
+                                     strict=strict)
 
     def search_by_annotation_creator_email(self, value: str, strict: bool = False) -> Union[
         AnnotationCollection, ElucidateResponse]:
@@ -416,7 +428,8 @@ class ElucidateClient:
         :return:
         :rtype:
         """
-        return self.__search_by_role(role='creator', levels='annotation', type='emailsha1', value=value, strict=strict)
+        return self.__search_by_role(role='creator', levels='annotation', type='emailsha1', value=value,
+                                     strict=strict)
 
     def search_by_annotation_generator_id(self, value: str, strict: bool = False) -> Union[
         AnnotationCollection, ElucidateResponse]:
@@ -455,7 +468,8 @@ class ElucidateClient:
         :return:
         :rtype:
         """
-        return self.__search_by_role(role='generator', levels='annotation', type='nickname', value=value, strict=strict)
+        return self.__search_by_role(role='generator', levels='annotation', type='nickname', value=value,
+                                     strict=strict)
 
     def search_by_annotation_generator_email(self, value: str, strict: bool = False) -> Union[
         AnnotationCollection, ElucidateResponse]:
@@ -468,7 +482,8 @@ class ElucidateClient:
         :return:
         :rtype:
         """
-        return self.__search_by_role(role='generator', levels='annotation', type='email', value=value, strict=strict)
+        return self.__search_by_role(role='generator', levels='annotation', type='email', value=value,
+                                     strict=strict)
 
     def search_by_annotation_generator_emailsha1(self, value: str, strict: bool = False) -> Union[
         AnnotationCollection, ElucidateResponse]:
@@ -741,7 +756,8 @@ class ElucidateClient:
         :return:
         :rtype:
         """
-        return self.__search_by_role(role='generator', levels='target', type='emailsha1', value=value, strict=strict)
+        return self.__search_by_role(role='generator', levels='target', type='emailsha1', value=value,
+                                     strict=strict)
 
     def __search_by_temporal(self, levels: str, types: str, since: datetime) -> Union[
         AnnotationCollection, ElucidateResponse]:
@@ -769,7 +785,8 @@ class ElucidateClient:
         """
         return self.__search_by_temporal(levels='annotation', types='created', since=since)
 
-    def search_by_annotation_modified_since(self, since: datetime) -> Union[ElucidateResponse, AnnotationCollection]:
+    def search_by_annotation_modified_since(self, since: datetime) -> Union[
+        ElucidateResponse, AnnotationCollection]:
         """
 
         :param since:
@@ -779,7 +796,8 @@ class ElucidateClient:
         """
         return self.__search_by_temporal(levels='annotation', types='modified', since=since)
 
-    def search_by_annotation_generated_since(self, since: datetime) -> Union[AnnotationCollection, ElucidateResponse]:
+    def search_by_annotation_generated_since(self, since: datetime) -> Union[
+        AnnotationCollection, ElucidateResponse]:
         """
 
         :param since:
@@ -903,7 +921,7 @@ class ElucidateClient:
         """
         url = f'{self.base_uri}/w3c/services/batch/update'
         json = {
-            "@context": "http://www.w3.org/ns/anno.jsonld",
+            "@context": default_anno_context,
             "body": body,
             "target": target
         }
@@ -928,7 +946,7 @@ class ElucidateClient:
         """
         url = f'{self.base_uri}/w3c/services/batch/delete'
         json = {
-            "@context": "http://www.w3.org/ns/anno.jsonld",
+            "@context": default_anno_context,
             "body": body,
             "target": target
         }
