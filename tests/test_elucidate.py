@@ -34,7 +34,7 @@ class ContainerIdentifierTestSuite(unittest.TestCase):
 
 class WebAnnotationSplitterTestSuite(unittest.TestCase):
     def test_split(self):
-        annotation = {'@context': 'http://www.w3.org/ns/anno.jsonld',
+        annotation = {'@context': ['http://www.w3.org/ns/anno.jsonld','http://di.huc.knaw.nl/ns/republic.jsonld'],
                       'body': [{'purpose': 'classifying',
                                 'type': 'TextualBody',
                                 'value': 'location'},
@@ -69,7 +69,7 @@ class WebAnnotationSplitterTestSuite(unittest.TestCase):
                                   'source': 'https://files.transkribus.eu/iiif/2/MOQMINPXXPUTISCRFIRKIOIX/full/max/0/default.jpg',
                                   'type': 'image'}],
                       'type': 'Annotation'}
-        (body, target, custom) = et.split_annotation(annotation)
+        (body, target, custom, custom_contexts) = et.split_annotation(annotation)
         expected_body = [{'purpose': 'classifying',
                           'type': 'TextualBody',
                           'value': 'location'},
@@ -102,9 +102,11 @@ class WebAnnotationSplitterTestSuite(unittest.TestCase):
                                          'name': 'GoldenAgentsNER',
                                          'type': 'Software'},
                            'motivation': 'classifying'}
+        expected_custom_contexts = ['http://di.huc.knaw.nl/ns/republic.jsonld']
         self.assertEqual(expected_body, body)
         self.assertEqual(expected_target, target)
         self.assertEqual(expected_custom, custom)
+        self.assertEqual(expected_custom_contexts, custom_contexts)
 
 
 def get_result(response: ElucidateResponse):
