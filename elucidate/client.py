@@ -153,7 +153,7 @@ class ElucidateClient:
             if isinstance(custom_contexts, (str, dict)):
                 context = [default_anno_context, custom_contexts]
             elif isinstance(custom_contexts, list):
-                context = [default_anno_context].extend(custom_contexts)
+                context = [default_anno_context, *custom_contexts]
         annotation = {
             "@context": context,
             "type": "Annotation",
