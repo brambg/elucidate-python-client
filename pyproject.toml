@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "elucidate"
+name = "elucidate-client"
 version = "0.1.0"
 description = "Python client to interact with an elicidate server"
 authors = ["Bram Buitendijk <bram.buitendijk@di.huc.knaw.nl>"]
