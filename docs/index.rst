@@ -13,13 +13,13 @@ using pip:
 
 .. code-block:: bash
 
-    pip install |ec|
+    pip install elucidate-client
 
 using poetry:
 
 .. code-block:: bash
 
-    poetry add |ec|
+    poetry add elucidate-client
 
 Read more on `basic usage <usage.html>`_
 
