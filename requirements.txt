@@ -1,3 +1,0 @@
-icecream==2.1.1
-requests==2.25.1
-uri==2.0.1

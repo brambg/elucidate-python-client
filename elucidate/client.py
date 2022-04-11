@@ -1,10 +1,9 @@
 import http.client
+import requests
 from datetime import datetime
 from http import HTTPStatus
-from typing import Union
-
-import requests
 from requests import Response
+from typing import Union
 
 from elucidate.model import AnnotationCollection, ElucidateFailure, ElucidateSuccess, AnnotationIdentifier, \
     ContainerIdentifier, ElucidateResponse

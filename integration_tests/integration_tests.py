@@ -2,7 +2,6 @@
 import datetime
 import unittest
 import urllib.parse
-
 from icecream import ic
 
 from elucidate.client import ElucidateClient

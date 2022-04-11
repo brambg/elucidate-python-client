@@ -34,7 +34,7 @@ class ContainerIdentifierTestSuite(unittest.TestCase):
 
 class WebAnnotationSplitterTestSuite(unittest.TestCase):
     def test_split(self):
-        annotation = {'@context': ['http://www.w3.org/ns/anno.jsonld','http://di.huc.knaw.nl/ns/republic.jsonld'],
+        annotation = {'@context': ['http://www.w3.org/ns/anno.jsonld', 'http://di.huc.knaw.nl/ns/republic.jsonld'],
                       'body': [{'purpose': 'classifying',
                                 'type': 'TextualBody',
                                 'value': 'location'},

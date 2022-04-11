@@ -1,0 +1,33 @@
+[tool.poetry]
+name = "elucidate"
+version = "0.1.0"
+description = "Python client to interact with an elicidate server"
+authors = ["Bram Buitendijk <bram.buitendijk@di.huc.knaw.nl>"]
+license = "MIT"
+readme = "README.md"
+repository = 'https://github.com/knaw-huc/elucidate-python-client'
+packages = [{ include = "elucidate" }]
+classifiers = [
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+]
+
+[tool.poetry.dependencies]
+python = "^3.7"
+requests = "^2.27.1"
+
+[tool.poetry.dev-dependencies]
+icecream = "^2.1.2"
+pytest = "^7.1.1"
+
+[tool.poetry.urls]
+"Bug Tracker" = "https://github.com/knaw-huc/elucidate-python-client/issues"
+
+[tool.poetry.scripts]
+version = 'poetry_scripts:version'
+
+[build-system]
+requires = ["poetry-core>=1.0"]
+build-backend = "poetry.core.masonry.api"

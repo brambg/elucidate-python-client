@@ -2,7 +2,6 @@ from typing import Any
 
 import requests
 from requests import Response
-from uri import URI
 
 
 class ElucidateResponse:
@@ -50,7 +49,7 @@ class AnnotationIdentifier:
         return self.__str__()
 
     def container_identifier(self) -> ContainerIdentifier:
-        container_url = str(URI(self.url).resolve("."))
+        container_url = self.url.replace(self.uuid, '')
         return ContainerIdentifier(container_url)
 
 
