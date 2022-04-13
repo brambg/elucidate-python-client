@@ -4,9 +4,9 @@
 [![Project Status: WIP – Initial development is in progress, but there has not yet been a stable, usable release suitable for the public.](https://www.repostatus.org/badges/latest/wip.svg)](https://www.repostatus.org/#wip)
 [![Documentation Status](https://readthedocs.org/projects/elucidate-python-client/badge/?version=latest)](https://elucidate-python-client.readthedocs.io/en/latest/?badge=latest)
 ![PyPI](https://img.shields.io/pypi/v/elucidate-client)
-![PyPI - Python Version](https://img.shields.io/pypi/pyversions/eluciate-client)
+![PyPI - Python Version](https://img.shields.io/pypi/pyversions/elucidate-client)
 
-A Python client for accessing an [elucidate](https://github.com/knaw-huc/elucidate) server (knaw-huc fork)
+A Python client for accessing an [elucidate](https://github.com/knaw-huc/elucidate-server) server (knaw-huc fork)
 
 ## installing
 
